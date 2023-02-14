@@ -1,0 +1,7 @@
+*.env
+*.csv
+
+test.js
+
+vscode/
+node_modules/
