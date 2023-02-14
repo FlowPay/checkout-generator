@@ -1,6 +1,6 @@
 # Checkout Generator 🧬
 
-Checkout generator è uno script in node.js che può generare una lista di checkout da un CSV, integrato perfettamente con le api di [Flowpay](https://www.flowpay.it/)
+Checkout generator è uno script in node.js che può generare una lista di checkout da un CSV, integrato perfettamente con le api di [Flowpay](https://www.flowpay.it/).
 
 ## Requisiti
 
