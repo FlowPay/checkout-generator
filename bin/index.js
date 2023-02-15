@@ -6,7 +6,11 @@ import yargs from "yargs/yargs";
 import process from "node:process";
 
 import { readFileSync, existsSync, writeFile } from "node:fs";
-import { buildNewFileName, currencyToFloat, yesterdayISOString } from "./utils.js";
+import {
+	buildNewFileName,
+	currencyToFloat,
+	yesterdayISOString,
+} from "./utils.js";
 
 const options = yargs(process.argv.slice(2))
 	.usage("Usage: -p <path>")
@@ -85,6 +89,10 @@ if (!config.clientId || !config.clientSecret) {
 
 if (!existsSync(config.csvPath)) {
 	throw `Errore! Non esiste il file nel path ${config.csvPath}`;
+}
+
+if (!existsSync(config.csvPathOutput)) {
+	throw `Errore! Il file di output impostato o generato non è valido: ${config.csvPathOutput}`;
 }
 
 const isFileSupported = /^.*\.(csv)$/gi.test(config.csvPath);
@@ -203,7 +211,7 @@ async function buildCheckout(
 
 			const vatCode = res.data.vatCountryID + res.data.vatCode;
 
-			console.log(`Processo ${index}: Ottieni un fingerprint...`);
+			console.log(`Generazione ${index}: Ottieni un fingerprint...`);
 
 			const resTransfer = await axios({
 				method: "post",
@@ -224,14 +232,14 @@ async function buildCheckout(
 
 			const fingerprint = resTransfer.data.fingerprint;
 			if (!fingerprint) {
-				throw `Processo ${index}: Errore! Non ho ottenuto il fingerprint`;
+				throw `Generazione ${index}: Errore! Non ho ottenuto il fingerprint`;
 			}
 
 			console.log(
-				`Processo ${index}: Fingerprint ottenuto con successo.`
+				`Generazione ${index}: Fingerprint ottenuto con successo.`
 			);
 
-			console.log(`Processo ${index}: Genera checkout...`);
+			console.log(`Generazione ${index}: Genera checkout...`);
 
 			const resFinger = await axios({
 				method: "post",
@@ -255,11 +263,11 @@ async function buildCheckout(
 				`${baseUrlCheckout}/${codeInvoice}`,
 			];
 
-			console.log(`Processo ${index}: Checkout generato!`);
+			console.log(`Generazione ${index}: Checkout generato!`);
 
 			resolve(copyData);
 		} catch (err) {
-			reject(`Processo ${index}: ${err.message}`);
+			reject(`Generazione ${index}: ${err.message}`);
 		}
 	});
 }
