@@ -9,11 +9,16 @@ import { readFileSync, existsSync, writeFile } from "node:fs";
 import {
 	buildNewFileName,
 	currencyToFloat,
-	yesterdayISOString,
+	yesterdayDate,
+	dateToISOString,
+	someValues,
 } from "./utils.js";
 
 const options = yargs(process.argv.slice(2))
-	.usage("Usage: -p <path>")
+	.usage("Utilizzo: -p <path>")
+	.example(
+		'py-generator --p "<your_path_csv>" --i "<your_client_id>" --s "<your_client_secret>"'
+	)
 	.option("p", {
 		alias: "path",
 		describe: "Inserisci il csv path del file da cui generare i checkout",
@@ -24,6 +29,12 @@ const options = yargs(process.argv.slice(2))
 		alias: "pathOutput",
 		describe:
 			"Inserisci un path per output del csv generato. Se omesso sarà nella stessa cartella del file caricato.",
+		type: "string",
+	})
+	.option("j", {
+		alias: "pathMap",
+		describe:
+			"Inserisci il path del map.json per mappare i titoli di colonna custom (property field custom)",
 		type: "string",
 	})
 	.option("r", {
@@ -46,6 +57,45 @@ const options = yargs(process.argv.slice(2))
 		alias: "clientSecret",
 		describe: "Configura il tuo client_secret",
 		type: "string",
+	})
+
+	// opstions mapping
+	.option("v", {
+		alias: "vatCode",
+		describe: "Mappa nome della colonna di vat_code (Partita IVA)",
+		type: "string",
+	})
+	.option("c", {
+		alias: "creditorIban",
+		describe: "Mappa nome della colonna di creditor_iban (Creditore IBAN)",
+		type: "string",
+	})
+	.option("a", {
+		alias: "amount",
+		describe: "Mappa nome della colonna di amount (Importo)",
+		type: "string",
+	})
+	.option("e", {
+		alias: "expireDate",
+		describe: "Mappa nome della colonna di expire_date (Data di scadenza)",
+		type: "string",
+	})
+	.option("r", {
+		alias: "remittance",
+		describe: "Mappa nome della colonna di remittance (Causale)",
+		type: "string",
+	})
+	.option("d", {
+		alias: "codeInvoice",
+		describe:
+			"Mappa nome della colonna di code_invoice (Codice checkout **generato**)",
+		type: "string",
+	})
+	.option("u", {
+		alias: "urlCheckout",
+		describe:
+			"Mappa nome della colonna di url_checkout (Url checkout **generato**)",
+		type: "string",
 	}).argv;
 
 // read in .env
@@ -60,9 +110,29 @@ const config = {
 	csvPathOutput:
 		options.pathOutput ??
 		buildNewFileName(options.path, "generated") ??
-		buildNewFileName(process.env.CSV_PATH, "generated"), // todo: implementare logica cambiare nome automaticamente
+		buildNewFileName(process.env.CSV_PATH, "generated"),
 	okRedirect: options.okRedirect,
 	nokRedirect: options.nokRedirect,
+
+	// Mapping
+	// le filed devono corrispondere al mapping del json
+	// quindi: vat_code, creditor_iban, expire_date...
+	mapField: {
+		vat_code: options.vatCode,
+		creditor_iban: options.creditorIban,
+		amount: options.amount,
+		expire_date: options.expireDate,
+		remittance: options.remittance,
+		code_invoice: options.codeInvoice,
+		url_checkout: options.urlCheckout,
+	},
+
+	// or path mapping
+	mapPath: isDevelopment
+		? process.env.MAP_PATH
+		: options.pathMap ?? "map.json",
+
+	// baseUrl
 	baseUrlOauth: isDevelopment
 		? process.env.BASE_URL_OAUTH
 		: "https://core.flowpay.it/api/oauth",
@@ -97,6 +167,13 @@ if (!/^.*\.(csv)$/gi.test(config.csvPathOutput)) {
 
 if (!/^.*\.(csv)$/gi.test(config.csvPath)) {
 	throw "Errore! Il file richiesto non è supportato, deve essere un csv.";
+}
+
+if (
+	config.mapPath &&
+	(!existsSync(config.csvPath) || !/^.*\.(json)$/gi.test(config.mapPath))
+) {
+	throw "Errore! Il file richiesto non esiste o non è supportato, deve essere un json.";
 }
 
 console.log("Richiseta di autenticazione...");
@@ -144,32 +221,61 @@ axios({
 		});
 
 		const dataPerRow = dataFile.split(/\r?\n/);
-		const getCoumnNames = dataPerRow.splice(0, 1)[0].split(";");
+		const columnNames = dataPerRow.splice(0, 1)[0].split(";");
+		const columnNamesCopied = [...columnNames];
 		const dataPerRowPerColumn = dataPerRow.map((row) => row.split(";"));
 
-		console.log(`Leggo dati da ${config.csvPath}`);
+		const rawdata = readFileSync(config.mapPath);
+		const mapField = JSON.parse(rawdata);
 
-		const arrayContentData = [];
-		for (let i = 0; i < dataPerRowPerColumn.length; i++) {
-			const c = dataPerRowPerColumn[i];
+		for (const name in mapField) {
+			const i = columnNames.indexOf(mapField[name]);
+			if (i > -1) columnNames[i] = name;
+			else columnNames.push(name);
+		}
+
+		if (someValues(config.mapField)) {
+			// se ci sono dati in mapField
+			for (const field in config.mapField) {
+				const name = config.mapField[field];
+				if (name) {
+					const index = columnNames.indexOf(name);
+					columnNames[index] = field;
+				}
+			}
+		}
+
+		const records = dataPerRowPerColumn.map((r) =>
+			columnNames.reduce((o, key, i) => ({ ...o, [key]: r[i] }), {})
+		);
+
+		console.log(`Leggo dati da ${config.csvPath}`);
+		const arrayRecordData = [];
+
+		for (const i in records) {
+			const record = records[i];
 			const checkoutGenerated = await buildCheckout(
-				c,
+				record,
 				i,
 				tenantId,
 				tokenType,
 				accessToken,
-				config.baseUrlCheckout,
-				config.okRedirect,
-				config.nokRedirect
+				config
 			);
 
-			arrayContentData.push(checkoutGenerated);
+			arrayRecordData.push(checkoutGenerated);
 		}
 
-		getCoumnNames.push("Riferimento checkout");
-		getCoumnNames.push("Link riferimento checkout");
+		columnNamesCopied.push(config.code_invoice ?? mapField["code_invoice"]);
+		columnNamesCopied.push(config.url_checkout ?? mapField["url_checkout"]);
 
-		const arrayContentGenerated = [getCoumnNames, ...arrayContentData];
+		// const arrayContentData = arrayRecordData.map((v) => Object.values(v));
+
+		const arrayContentGenerated = [
+			columnNamesCopied,
+			...arrayRecordData.map((v) => Object.values(v)),
+		];
+
 		const listContent = arrayContentGenerated.map((m) => m.join(";"));
 		const newContentCsv = `${listContent.join("\r\n")}`;
 
@@ -182,23 +288,22 @@ axios({
 	});
 });
 
-async function buildCheckout(
-	data,
-	index,
-	tenantId,
-	tokenType,
-	accessToken,
-	baseUrlCheckout,
-	okRedirect,
-	nokRedirect
-) {
+async function buildCheckout(data, index, tenantId, tokenType, accessToken) {
 	return new Promise(async function (resolve, reject) {
 		try {
-			const amount = currencyToFloat(data[3]);
-			const creditorIBAN = data[6];
-			const remittance = ""; // ??
-			const debtor = data[0];
-			const date = yesterdayISOString();
+			// todo: aggiungere un assert valori
+
+			if (data.expire_date && Date.parse(data.expire_date) == 0) {
+				throw "Errore! Il formato della data non è corretto. Formato corretto YYYY-MM-DD HH:mm:ss oppure YYYY-MM-DDTHH:mm:ss";
+			}
+
+			const amount = currencyToFloat(data.amount);
+			const creditorIBAN = data.creditor_iban;
+			const remittance = data.remittance;
+			const debtor = data.vat_code;
+			const date = data.expire_date
+				? dateToISOString(new Date(data.expire_date))
+				: dateToISOString(yesterdayDate());
 
 			const res = await axios({
 				method: "get",
@@ -249,18 +354,21 @@ async function buildCheckout(
 				},
 				data: {
 					fingerprint: fingerprint,
-					nokRedirect: nokRedirect,
-					okRedirect: okRedirect,
+					nokRedirect: config.nokRedirect,
+					okRedirect: config.okRedirect,
 					type: "transfer",
 				},
 			});
 
 			const codeInvoice = resFinger.data.code;
-			const copyData = [
-				...data,
-				codeInvoice,
-				`${baseUrlCheckout}/${codeInvoice}`,
-			];
+			if (!codeInvoice)
+				throw "Errore! Non è stato generato il code_invoice";
+
+			let copyData = Object.assign({}, data);
+			copyData["code_invoice"] = codeInvoice;
+			copyData[
+				"url_checkout"
+			] = `${config.baseUrlCheckout}/${codeInvoice}`;
 
 			console.log(`Generazione ${index}: Checkout generato!`);
 

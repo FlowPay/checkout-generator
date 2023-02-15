@@ -1,0 +1,9 @@
+{
+	"vat_code": "Partita Iva",
+	"amount": "Importo",
+	"expire_date": "Data di scadenza",
+	"creditor_iban": "Creditore IBAN",
+	"remittance": "Causale",
+	"code_invoice": "Riferimento checkout",
+	"url_checkout": "Link riferimento checkout"
+}
