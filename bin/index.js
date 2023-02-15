@@ -65,10 +65,10 @@ const config = {
 	nokRedirect: options.nokRedirect,
 	baseUrlOauth: isDevelopment
 		? process.env.BASE_URL_OAUTH
-		: "https://app.flowpay.it/api/oauth",
+		: "https://core.flowpay.it/api/oauth",
 	baseUrlOpenId: isDevelopment
 		? process.env.BASE_URL_OPENID
-		: "https://app.flowpay.it/api/openid",
+		: "https://core.flowpay.it/api/openid",
 	baseUrlPlatform: isDevelopment
 		? process.env.BASE_URL_PLATFORM
 		: "https://app.flowpay.it/api",
@@ -231,7 +231,7 @@ async function buildCheckout(
 
 			const fingerprint = resTransfer.data.fingerprint;
 			if (!fingerprint) {
-				throw `Generazione ${index}: Errore! Non ho ottenuto il fingerprint`;
+				throw `Errore! Non ho ottenuto il fingerprint`;
 			}
 
 			console.log(
@@ -266,7 +266,7 @@ async function buildCheckout(
 
 			resolve(copyData);
 		} catch (err) {
-			reject(`Generazione ${index}: ${err.message}`);
+			reject(`Generazione ${index}: ${err}`);
 		}
 	});
 }
