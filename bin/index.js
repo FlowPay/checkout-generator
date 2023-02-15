@@ -91,12 +91,11 @@ if (!existsSync(config.csvPath)) {
 	throw `Errore! Non esiste il file nel path ${config.csvPath}`;
 }
 
-if (!existsSync(config.csvPathOutput)) {
+if (!/^.*\.(csv)$/gi.test(config.csvPathOutput)) {
 	throw `Errore! Il file di output impostato o generato non è valido: ${config.csvPathOutput}`;
 }
 
-const isFileSupported = /^.*\.(csv)$/gi.test(config.csvPath);
-if (!isFileSupported) {
+if (!/^.*\.(csv)$/gi.test(config.csvPath)) {
 	throw "Errore! Il file richiesto non è supportato, deve essere un csv.";
 }
 
