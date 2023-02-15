@@ -96,6 +96,11 @@ const options = yargs(process.argv.slice(2))
 		describe:
 			"Mappa nome della colonna di url_checkout (Url checkout **generato**)",
 		type: "string",
+	})
+	.option("ri", {
+		alias: "recurringInfo",
+		describe: "Mappa nome della colonna di recurring_info (Ricorrenza)",
+		type: "string",
 	}).argv;
 
 // read in .env
@@ -125,6 +130,7 @@ const config = {
 		remittance: options.remittance,
 		code_invoice: options.codeInvoice,
 		url_checkout: options.urlCheckout,
+		recurring_info: options.recurringInfo,
 	},
 
 	// or path mapping
@@ -301,6 +307,9 @@ async function buildCheckout(data, index, tenantId, tokenType, accessToken) {
 			const creditorIBAN = data.creditor_iban;
 			const remittance = data.remittance;
 			const debtor = data.vat_code;
+			const recurringInfo = data.recurring_info
+				? parseInt(data.recurring_info)
+				: 0;
 			const date = data.expire_date
 				? dateToISOString(new Date(data.expire_date))
 				: dateToISOString(yesterdayDate());
@@ -331,6 +340,13 @@ async function buildCheckout(data, index, tenantId, tokenType, accessToken) {
 					remittance: remittance,
 					debtor: debtor,
 					date: date,
+					recurringInfo:
+						recurringInfo > 1
+							? {
+									installments: recurringInfo,
+									frequency: "monthly",
+							  }
+							: null,
 				},
 			});
 
