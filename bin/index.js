@@ -6,6 +6,9 @@ import yargs from "yargs/yargs";
 import process from "node:process";
 
 import { readFileSync, existsSync, writeFile } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "url";
+import { progressBar } from "./loader.js";
 import {
 	buildNewFileName,
 	currencyToFloat,
@@ -13,6 +16,9 @@ import {
 	dateToISOString,
 	someValues,
 } from "./utils.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const options = yargs(process.argv.slice(2))
 	.usage("Utilizzo: -p <path>")
@@ -136,7 +142,7 @@ const config = {
 	// or path mapping
 	mapPath: isDevelopment
 		? process.env.MAP_PATH
-		: options.pathMap ?? "map.json",
+		: options.pathMap ?? join(__dirname, "..", "map.json"),
 
 	// baseUrl
 	baseUrlOauth: isDevelopment
@@ -155,6 +161,8 @@ const config = {
 		? process.env.BASE_URL
 		: "https://app.flowpay.it/api",
 };
+
+console.log("####", config.mapPath);
 
 // Validazione dati inseriti
 
@@ -177,7 +185,7 @@ if (!/^.*\.(csv)$/gi.test(config.csvPath)) {
 
 if (
 	config.mapPath &&
-	(!existsSync(config.csvPath) || !/^.*\.(json)$/gi.test(config.mapPath))
+	(!existsSync(config.mapPath) || !/^.*\.(json)$/gi.test(config.mapPath))
 ) {
 	throw "Errore! Il file richiesto non esiste o non è supportato, deve essere un json.";
 }
@@ -258,6 +266,9 @@ axios({
 		console.log(`Leggo dati da ${config.csvPath}`);
 		const arrayRecordData = [];
 
+		let index = 0;
+		progressBar(records.length, index, "Stiamo generando ");
+
 		for (const i in records) {
 			const record = records[i];
 			const checkoutGenerated = await buildCheckout(
@@ -270,7 +281,12 @@ axios({
 			);
 
 			arrayRecordData.push(checkoutGenerated);
+
+			index++;
+			progressBar(records.length, index, "Stiamo generando ");
 		}
+
+		process.stdout.write("\r\n");
 
 		columnNamesCopied.push(config.code_invoice ?? mapField["code_invoice"]);
 		columnNamesCopied.push(config.url_checkout ?? mapField["url_checkout"]);
@@ -324,7 +340,7 @@ async function buildCheckout(data, index, tenantId, tokenType, accessToken) {
 
 			const vatCode = res.data.vatCountryID + res.data.vatCode;
 
-			console.log(`Generazione ${index}: Ottieni un fingerprint...`);
+			// console.log(`Generazione ${index}: Ottieni un fingerprint...`);
 
 			const resTransfer = await axios({
 				method: "post",
@@ -355,11 +371,11 @@ async function buildCheckout(data, index, tenantId, tokenType, accessToken) {
 				throw `Errore! Non ho ottenuto il fingerprint`;
 			}
 
-			console.log(
-				`Generazione ${index}: Fingerprint ottenuto con successo.`
-			);
+			// console.log(
+			// 	`Generazione ${index}: Fingerprint ottenuto con successo.`
+			// );
 
-			console.log(`Generazione ${index}: Genera checkout...`);
+			// console.log(`Generazione ${index}: Genera checkout...`);
 
 			const resFinger = await axios({
 				method: "post",
@@ -386,7 +402,7 @@ async function buildCheckout(data, index, tenantId, tokenType, accessToken) {
 				"url_checkout"
 			] = `${config.baseUrlCheckout}/${codeInvoice}`;
 
-			console.log(`Generazione ${index}: Checkout generato!`);
+			// console.log(`Generazione ${index}: Checkout generato!`);
 
 			resolve(copyData);
 		} catch (err) {
