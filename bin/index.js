@@ -18,8 +18,6 @@ import {
 	someValues,
 } from "./utils.js";
 
-main();
-
 async function main() {
 	try {
 		const __filename = fileURLToPath(import.meta.url);
@@ -437,3 +435,11 @@ async function buildCheckout(
 		throw `\nGenerazione ${index}: ${err}`; // console.error(chalk.red(`\nGenerazione ${index}: ${err}`));
 	}
 }
+
+/*
+ *
+ *	Avvia script
+ *
+ */
+
+main();
