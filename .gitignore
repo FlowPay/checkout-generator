@@ -1,7 +1,10 @@
 *.env
 *.csv
 
+# not ignore csv in example dir
+!example/esempio.csv
+
 test.js
 
-vscode/
+.vscode/
 node_modules/

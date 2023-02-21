@@ -38,11 +38,41 @@ function currencyToFloat(value) {
 	return parseFloat(value);
 }
 
-function yesterdayISOString() {
+function yesterdayDate() {
 	const today = new Date();
-	const yesterday = today.setDate(today.getDate() - 1);
-	const yesterdayISO = new Date(yesterday).toISOString().split(".")[0] + "Z"; // ISO string withou milliseconds
-	return yesterdayISO;
+	return new Date(today.setDate(today.getDate() - 1));
+	// const yesterdayISO = new Date(yesterday).toISOString().split(".")[0] + "Z"; // ISO string withou milliseconds
+	// return yesterdayISO;
 }
 
-export { buildNewFileName, currencyToFloat, yesterdayISOString };
+function dateToISOString(date) {
+	return date.toISOString().split(".")[0] + "Z";
+}
+
+function replaceDataInArray(data, array) {
+	const index = array.indexOf(data);
+	array[index] = data;
+	return array;
+}
+
+function someValues(obj) {
+	return Object.values(obj).some((m) => m);
+}
+
+// if (
+// 	data.expire_date &&
+// 	!/\d{4}-[01]\d-[0-3]\d\s[0-2]\d:[0-5]\d:[0-5]\d(?:\.\d+)?Z?/gm.test(
+// 		data.expire_date
+// 	)
+// ) {
+// 	throw "Errore! Il formato della data non è corretto. Formato corretto YYYY-MM-DD HH:mm:ss oppure YYYY-MM-DDTHH:mm:ss";
+// }
+
+export {
+	buildNewFileName,
+	currencyToFloat,
+	yesterdayDate,
+	dateToISOString,
+	replaceDataInArray,
+	someValues,
+};
