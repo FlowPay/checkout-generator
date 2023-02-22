@@ -6,7 +6,7 @@ import yargs from "yargs/yargs";
 import process from "node:process";
 import chalk from "chalk";
 
-import { readFileSync, existsSync, writeFile } from "node:fs";
+import { readFileSync, writeFile } from "node:fs";
 import { join, dirname, basename } from "node:path";
 import { fileURLToPath } from "url";
 import { progressBar } from "./loader.js";
@@ -20,6 +20,9 @@ import {
 	mapTo,
 	mapFrom,
 	buildContentCsv,
+	assertScript,
+	assertConfig,
+	isValidDateTime,
 } from "./utils.js";
 
 async function main() {
@@ -70,6 +73,12 @@ async function main() {
 			.option("s", {
 				alias: "clientSecret",
 				describe: "Configura il tuo client_secret",
+				type: "string",
+			})
+			.option("y", {
+				alias: "pathScirpt",
+				describe:
+					"Path Script personale in JS per mappare ed eseguire operazioni sulle proprie colonne. Accetta in input -> [{nomeColonna: valore}] e output -> {amount, creditor, creditorIBAN, remittance, debtor, date, recurringInfo}",
 				type: "string",
 			})
 
@@ -134,6 +143,7 @@ async function main() {
 			clientId: options.clientId ?? process.env.CLIENT_ID,
 			clientSecret: options.clientSecret ?? process.env.CLIENT_SECRET,
 			csvPath: options.path ?? process.env.CSV_PATH,
+			scriptPath: options.pathScirpt ?? process.env.SCRIPT_PATH,
 			csvPathOutput:
 				options.pathOutput ??
 				buildNewFileName(options.path, "generated") ??
@@ -179,35 +189,12 @@ async function main() {
 				: "https://app.flowpay.it/api",
 		};
 
-		// Validazione dati inseriti
-
-		if (!config.clientId || !config.clientSecret) {
-			console.log("Attenzione! Non ho il client id o il client secret");
-			process.exit(0); // exit process
-		}
-
-		if (!existsSync(config.csvPath)) {
-			throw `Errore! Non esiste il file nel path ${config.csvPath}`;
-		}
-
-		if (!/^.*\.(csv)$/gi.test(config.csvPathOutput)) {
-			throw `Errore! Il file di output impostato o generato non è valido: ${config.csvPathOutput}`;
-		}
-
-		if (!/^.*\.(csv)$/gi.test(config.csvPath)) {
-			throw "Errore! Il file richiesto non è supportato, deve essere un csv.";
-		}
-
-		if (
-			config.mapPath &&
-			(!existsSync(config.mapPath) ||
-				!/^.*\.(json)$/gi.test(config.mapPath))
-		) {
-			throw "Errore! Il file richiesto non esiste o non è supportato, deve essere un json.";
-		}
+		// assert di config
+		// dunque valida i dati inseriti
+		assertConfig(config);
 
 		console.log(
-			chalk.yellow(
+			chalk.white(
 				`Avvio generazione da "${basename(config.csvPath)}" ...`
 			)
 		);
@@ -254,16 +241,41 @@ async function main() {
 			encoding: "UTF-8",
 		});
 
-		const rows = dataFile.split(/\r?\n/);
-		const columnNames = rows.splice(0, 1)[0].split(";");
-		const rowDatas = rows.map((row) => row.split(";"));
+		let rows = dataFile.split(/\r?\n/);
+		rows = rows.filter((r) => /[^;]/gi.test(r)); // rimuovi righe vuote
+		const columnNames = rows.splice(0, 1)[0].split(";"); // ottieni intestazione colonne
+		const rowDatas = rows.map((row) => row.split(";")); // ottieni dati per riga
 
 		const rawdata = readFileSync(config.mapPath);
 		const mapField = JSON.parse(rawdata);
 
 		const arrayOfObjects = fromArrayToObject(rowDatas, columnNames);
 		const mapMerged = mapMerge(mapField, config.mapField);
-		const records = mapTo(arrayOfObjects, mapMerged);
+		let records = [];
+
+		const isMapMode = !config.scriptPath;
+
+		if (isMapMode)
+			// map mode
+			records = mapTo(arrayOfObjects, mapMerged);
+		else {
+			// script mode
+			console.log(chalk.yellow(`Importo script "${config.scriptPath}"`));
+
+			// importo script da path
+			const myscript = await import(config.scriptPath);
+
+			console.log(chalk.green(`Importato con successo!`));
+			console.log(chalk.white(`Eseguo script...`));
+
+			for (const i in arrayOfObjects) {
+				const res = myscript.default(arrayOfObjects[i]);
+				assertScript(res, i);
+				records.push(Object.assign(arrayOfObjects[i], res));
+			}
+
+			console.log(chalk.green(`Script eseguito con sucecsso!`));
+		}
 
 		const arrayRecordData = [];
 
@@ -289,6 +301,19 @@ async function main() {
 		}
 
 		process.stdout.write("\r\n");
+
+		if (!isMapMode) {
+			// rimuovi proprietà aggiunte per business logic
+			// che non devono essere stampate
+			arrayRecordData.forEach((m) => {
+				delete m.recurring_info;
+				delete m.creditor_iban;
+				delete m.vat_code;
+				delete m.amount;
+				delete m.remittance;
+				delete m.date;
+			});
+		}
 
 		columnNames.push(
 			config.mapField.fingerprint ?? mapField["fingerprint"]
@@ -327,8 +352,12 @@ async function buildCheckout(
 	try {
 		// todo: aggiungere un assert valori
 
-		if (data.expire_date && Date.parse(data.expire_date) == 0) {
-			throw "Errore! Il formato della data non è corretto. Formato corretto YYYY-MM-DD HH:mm:ss oppure YYYY-MM-DDTHH:mm:ss";
+		if (
+			!isValidDateTime(
+				data.expire_date
+			) /*&& Date.parse(data.expire_date) == 0*/
+		) {
+			throw "Errore! Il formato della data non è corretto. Formato corretto YYYY-MM-DD oppure YYYY-MM-DD";
 		}
 
 		if (!data.creditor_iban) {

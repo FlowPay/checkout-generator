@@ -15,16 +15,21 @@ function buildNewFileName(path, nameToAdd) {
 	return newPath;
 }
 
+function isInt(n) {
+	return Number(n) === n && n % 1 === 0;
+}
+
+function isFloat(n) {
+	return Number(n) === n && n % 1 !== 0;
+}
+
 function currencyToFloat(value) {
 	if (!value) throw "Value is undefined";
 
-	// rimuovo eventuali spazi bianchi
-	value = value.replace(/\s/g, "");
+	if (isInt(value) || isFloat(value)) return value;
 
-	const regexCurrency = /€|\$|£/gi;
-	if (regexCurrency.test(value)) {
-		value = value.replace(regexCurrency, "");
-	}
+	// rimuovo eventuali spazi bianchi
+	value = value.replace(/[^0-9\,\.]/g, "");
 
 	// questa regex ottiene le migliai e decimali
 	const decimalRegex =
@@ -41,8 +46,6 @@ function currencyToFloat(value) {
 function yesterdayDate() {
 	const today = new Date();
 	return new Date(today.setDate(today.getDate() - 1));
-	// const yesterdayISO = new Date(yesterday).toISOString().split(".")[0] + "Z"; // ISO string withou milliseconds
-	// return yesterdayISO;
 }
 
 function dateToISOString(date) {
@@ -114,11 +117,53 @@ function sortFrom(a, b, arr) {
 // oppue: ^(([0]?[1-9]|1[0-2])\/([0-2]?[0-9]|3[0-1])\/[1-2]\d{3}) (20|21|22|23|[0-1]?\d{1}):([0-5]?\d{1})$
 function isValidDateTime(date) {
 	return (
-		date &&
-		!/\d{4}-[01]\d-[0-3]\d\s[0-2]\d:[0-5]\d:[0-5]\d(?:\.\d+)?Z?/gm.test(
-			date
-		)
+		date && /\d{4}-[01]\d-[0-3]\d$/gm.test(date)
+		// /\d{4}-[01]\d-[0-3]\d\s[0-2]\d:[0-5]\d:[0-5]\d(?:\.\d+)?Z?/gm.test(date)
 	);
+}
+
+function assertScript(data, i) {
+	if (!data.creditor_iban || !data.hasOwnProperty("creditor_iban"))
+		throw `Errore! creditor_iban è undefined nella riga ${i}`;
+
+	if (!data.vat_code || !data.hasOwnProperty("vat_code"))
+		throw `Errore! vat_code è undefined nella riga ${i}`;
+
+	if (!data.amount || !data.hasOwnProperty("amount"))
+		throw `Errore! amount è undefined nella riga ${i}`;
+
+	if (!data.remittance || !data.hasOwnProperty("remittance"))
+		throw `Errore! remittance è undefined nella riga ${i}`;
+
+	if (!data.expire_date || !data.hasOwnProperty("expire_date"))
+		throw `Errore! expire_date è undefined nella riga ${i}`;
+}
+
+function assertConfig(config) {
+	if (!config.clientId || !config.clientSecret)
+		throw "Attenzione! Non ho il client id o il client secret";
+
+	if (!existsSync(config.csvPath))
+		throw `Errore! Non esiste il file nel path ${config.csvPath}`;
+
+	if (!/^.*\.(csv)$/gi.test(config.csvPathOutput))
+		throw `Errore! Il file di output impostato o generato non è valido: ${config.csvPathOutput}`;
+
+	if (!/^.*\.(csv)$/gi.test(config.csvPath))
+		throw "Errore! Il file richiesto non è supportato, deve essere un csv.";
+
+	if (
+		config.mapPath &&
+		(!existsSync(config.mapPath) || !/^.*\.(json)$/gi.test(config.mapPath))
+	)
+		throw 'Errore! Il file richiesto non esiste o non è supportato, deve essere un "json".';
+
+	if (
+		config.scriptPath &&
+		(!existsSync(config.scriptPath) ||
+			!/^.*\.(mjs)$/gi.test(config.scriptPath))
+	)
+		throw 'Errore! Il file richiesto non esiste o non è supportato, deve essere uno script in "mjs".';
 }
 
 export {
@@ -135,4 +180,6 @@ export {
 	fromArrayToObject,
 	buildContentCsv,
 	isValidDateTime,
+	assertScript,
+	assertConfig,
 };

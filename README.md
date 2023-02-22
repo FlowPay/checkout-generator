@@ -49,15 +49,17 @@ Per windows invece segui queste [istruzioni](https://phoenixnap.com/kb/windows-s
 
 ```sh
 # esegui questa istruzione con chiavi impostate nella variabile di ambiente
-fpy-generator --p "<your_path_csv>"
+fpy-generator -p "<your_path_csv>"
 
 # esegui quest istruzione per impostare oltre all'input
 # un output path per la generazione del csv finale
-fpy-generator --p "<your_path_csv>" --o "<your_path_output_csv>"
+fpy-generator -p "<your_path_csv>" -o "<your_path_output_csv>"
 
 # esegui script impostando le chiavi come parametro se non sono come variabile ambiente
-fpy-generator --p "<your_path_csv>" --i "<your_client_id>" --s "<your_client_secret>"
+fpy-generator -p "<your_path_csv>" -i "<your_client_id>" -s "<your_client_secret>"
 ```
+
+> È possibile configurare lo script adattandolo alla propria situazione con [Mapping](#mapping) o [Scripting](#scripting)
 
 ## Opzioni
 
@@ -68,12 +70,13 @@ Lo script è in grado di accettare alre opzioni per esempio il link di redirect 
 | -p        | --path         | Inserisci il csv path del file da cui generare i checkout                                              | string |
 | -o        | --pathOutput   | Inserisci un path per output del csv generato. Se omesso sarà nella stessa cartella del file caricato. | string |
 | -j        | --pathMap      | Inserisci il path del map.json per mappare i titoli di colonna custom (property field custom).         | string |
+| -y        | --pathScript   | Inserisci il path del tuo script che verrà eseguito per ogni riga del csv.                             | string |
 | -r        | --okRedirect   | Configura un link per il redirect per checkout.                                                        | string |
 | -n        | --nokRedirect  | Configura un link per il redirect nel caso non esegua con successo il checkout.                        | string |
 | -i        | --clientId     | Configura il tuo client_id.                                                                            | string |
 | -s        | --clientSecret | Configura il tuo client_secret.                                                                        | string |
 
-## Mapping
+## Mapping {#scripting}
 
 È possibile mappare le colonne del proprio csv con due modalità diverse di configurazione:
 
@@ -99,7 +102,7 @@ Per aggiungere una propria configurazione sarà dunque sufficiente creare un fil
 
 ```sh
 # esegui questa istruzione con chiavi impostate nella variabile di ambiente
-fpy-generator --p "<your_path_csv>" ...altri comandi --j "<your_path_map>"
+fpy-generator -p "<your_path_csv>" ...altri comandi -j "<your_path_map>"
 ```
 
 > NB. Il valore che modificherai dovrà essere equivalente con il nome della colonna da mappare.
@@ -117,3 +120,37 @@ Oppure se si desidera mappare una sola colonna o tutte attravero opzioni di scri
 | -u        | --urlCheckout   | Mappa nome della colonna di url_checkout (Url checkout **generato**).    | string |
 | -ri       | --recurringInfo | Mappa nome della colonna di recurring_info (Ricorrenza).                 | string |
 | -f        | --fingerprint   | Mappa nome della colonna di fingerprint.                                 | string |
+
+# Scripting {#scripting}
+
+Come soluzione custom e diversa dal mapping, è possibile eseguire uno script `.mjs` con la propria business logic per ogni record del csv, dovrà dunque restituire un oggetto che sarà interpetato dal **Checkout Generator**. Lo scripting effettuerà l'override del mapping per tutte le poprietà tranne per --urlCheckout, --recurringInfo e --fingerprint.
+
+Lo script dovrà avere la seguente struttura.
+
+```js
+export default function (record) {
+	/*
+		record sarà un oggetto di un array
+		con property il nome della colonna corrisponde
+	*/
+
+	// ...
+
+	// struttura che checkout si aspetta di ricevere
+	return {
+		recurring_info,
+		creditor_iban,
+		vat_code,
+		expire_date,
+		amount,
+		remittance,
+	};
+}
+```
+
+Una volta scritto lo script con la propria logica eseguire **Checkout Generator** aggingedo il parametro pathScirpt come in questo esempio.
+
+```sh
+# esegui questa istruzione con chiavi impostate nella variabile di ambiente
+fpy-generator -p "<your_path_csv>" ...altri comandi -j "<your_path_script>"
+```
