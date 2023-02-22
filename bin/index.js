@@ -15,7 +15,6 @@ import {
 	currencyToFloat,
 	yesterdayDate,
 	dateToISOString,
-	someValues,
 	fromArrayToObject,
 	mapMerge,
 	mapTo,
@@ -122,8 +121,7 @@ async function main() {
 			})
 			.option("f", {
 				alias: "fingerprint",
-				describe:
-					"Mappa nome della colonna di fingerprint",
+				describe: "Mappa nome della colonna di fingerprint",
 				type: "string",
 			}).argv;
 
@@ -258,41 +256,10 @@ async function main() {
 
 		const rows = dataFile.split(/\r?\n/);
 		const columnNames = rows.splice(0, 1)[0].split(";");
-		// const columnNamesCopied = [...columnNames];
 		const rowDatas = rows.map((row) => row.split(";"));
 
 		const rawdata = readFileSync(config.mapPath);
 		const mapField = JSON.parse(rawdata);
-
-		// if (someValues(config.mapField)) {
-		// 	// se ci sono dati in mapField
-		// 	for (const field in config.mapField) {
-		// 		const name = config.mapField[field];
-
-		// 		if (name) {
-		// 			const index = columnNames.indexOf(name);
-		// 			if (index > -1) columnNames[index] = field;
-		// 			// se il nome della colonna mappata non esiste nel csv
-		// 			// e se non è un url checkout o code_invoice
-		// 			else if (
-		// 				index &&
-		// 				field !== "url_checkout" &&
-		// 				field !== "code_invoice"
-		// 			)
-		// 				throw `Errore! La colonna mappata "${config.mapField[field]}" non è presente nel csv`;
-		// 		}
-		// 	}
-		// }
-
-		// for (const name in mapField) {
-		// 	const i = columnNames.indexOf(mapField[name]);
-		// 	if (i > -1) columnNames[i] = name;
-		// 	else if (i < 0 && !config.mapField[name]) columnNames.push(name);
-		// }
-
-		// const records = rowDatas.map((r) =>
-		// 	columnNames.reduce((o, key, i) => ({ ...o, [key]: r[i] }), {})
-		// );
 
 		const arrayOfObjects = fromArrayToObject(rowDatas, columnNames);
 		const mapMerged = mapMerge(mapField, config.mapField);
@@ -322,21 +289,6 @@ async function main() {
 		}
 
 		process.stdout.write("\r\n");
-
-		// columnNamesCopied.push(
-		// 	config.mapField.code_invoice ?? mapField["code_invoice"]
-		// );
-		// columnNamesCopied.push(
-		// 	config.mapField.url_checkout ?? mapField["url_checkout"]
-		// );
-
-		// const arrayContentGenerated = [
-		// 	columnNamesCopied,
-		// 	...arrayRecordData.map((v) => Object.values(v)),
-		// ];
-
-		// const listContent = arrayContentGenerated.map((m) => m.join(";"));
-		// const newContentCsv = `${listContent.join("\r\n")}`;
 
 		columnNames.push(
 			config.mapField.fingerprint ?? mapField["fingerprint"]
