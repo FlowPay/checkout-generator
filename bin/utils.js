@@ -59,14 +59,67 @@ function someValues(obj) {
 	return Object.values(obj).some((m) => m);
 }
 
-// if (
-// 	data.expire_date &&
-// 	!/\d{4}-[01]\d-[0-3]\d\s[0-2]\d:[0-5]\d:[0-5]\d(?:\.\d+)?Z?/gm.test(
-// 		data.expire_date
-// 	)
-// ) {
-// 	throw "Errore! Il formato della data non è corretto. Formato corretto YYYY-MM-DD HH:mm:ss oppure YYYY-MM-DDTHH:mm:ss";
-// }
+function mapMerge(fromJson, fromOption) {
+	let newMap = Object.assign({}, fromJson);
+
+	for (const [key, value] of Object.entries(fromOption)) {
+		if (value) newMap[key] = value;
+	}
+
+	return newMap;
+}
+
+function mapTo(array, map) {
+	return array.map((a) => {
+		let o = Object.assign({}, a);
+		for (const [key, value] of Object.entries(map)) {
+			if (!a.hasOwnProperty(value)) continue;
+			o[key] = a[value];
+			delete o[value];
+		}
+		return o;
+	});
+}
+
+function mapFrom(array, map) {
+	return array.map((a) => {
+		let o = Object.assign({}, a);
+		for (const [key, value] of Object.entries(map)) {
+			if (!a.hasOwnProperty(key)) continue;
+			o[value] = a[key];
+			delete o[key];
+		}
+		return o;
+	});
+}
+
+function fromArrayToObject(row, columns) {
+	return row.map((r) =>
+		columns.reduce((o, key, i) => ({ ...o, [key]: r[i] }), {})
+	);
+}
+
+function buildContentCsv(array, columns) {
+	const keys = Object.keys(array[0]).sort((a, b) => sortFrom(a, b, columns));
+	const content = [keys, ...array.map((v) => keys.map((k) => v[k]))];
+
+	return `${content.map((m) => m.join(";")).join("\r\n")}`;
+}
+
+function sortFrom(a, b, arr) {
+	return arr.indexOf(a) - arr.indexOf(b);
+}
+
+// Formato corretto YYYY-MM-DD HH:mm:ss oppure YYYY-MM-DDTHH:mm:ss;
+// oppue: ^(([0]?[1-9]|1[0-2])\/([0-2]?[0-9]|3[0-1])\/[1-2]\d{3}) (20|21|22|23|[0-1]?\d{1}):([0-5]?\d{1})$
+function isValidDateTime(date) {
+	return (
+		date &&
+		!/\d{4}-[01]\d-[0-3]\d\s[0-2]\d:[0-5]\d:[0-5]\d(?:\.\d+)?Z?/gm.test(
+			date
+		)
+	);
+}
 
 export {
 	buildNewFileName,
@@ -75,4 +128,11 @@ export {
 	dateToISOString,
 	replaceDataInArray,
 	someValues,
+	mapMerge,
+	mapTo,
+	mapFrom,
+	sortFrom,
+	fromArrayToObject,
+	buildContentCsv,
+	isValidDateTime,
 };

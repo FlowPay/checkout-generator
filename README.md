@@ -51,7 +51,8 @@ Per windows invece segui queste [istruzioni](https://phoenixnap.com/kb/windows-s
 # esegui questa istruzione con chiavi impostate nella variabile di ambiente
 fpy-generator --p "<your_path_csv>"
 
-# esegui quest istruzione per impostare oltre all'input un output path per la generazione del csv finale
+# esegui quest istruzione per impostare oltre all'input
+# un output path per la generazione del csv finale
 fpy-generator --p "<your_path_csv>" --o "<your_path_output_csv>"
 
 # esegui script impostando le chiavi come parametro se non sono come variabile ambiente
@@ -115,3 +116,4 @@ Oppure se si desidera mappare una sola colonna o tutte attravero opzioni di scri
 | -d        | --codeInvoice   | Mappa nome della colonna di code_invoice (Codice checkout **generato**). | string |
 | -u        | --urlCheckout   | Mappa nome della colonna di url_checkout (Url checkout **generato**).    | string |
 | -ri       | --recurringInfo | Mappa nome della colonna di recurring_info (Ricorrenza).                 | string |
+| -f        | --fingerprint   | Mappa nome della colonna di fingerprint.                                 | string |

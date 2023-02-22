@@ -1,5 +1,5 @@
 {
-  "name": "flowpay-checkout-generator",
+  "name": "@flowpay/checkout-generator",
   "version": "1.0.0",
   "description": "Checkout generator chackout from csv",
   "main": "./bin/index.js",

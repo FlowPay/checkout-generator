@@ -16,6 +16,11 @@ import {
 	yesterdayDate,
 	dateToISOString,
 	someValues,
+	fromArrayToObject,
+	mapMerge,
+	mapTo,
+	mapFrom,
+	buildContentCsv,
 } from "./utils.js";
 
 async function main() {
@@ -114,6 +119,12 @@ async function main() {
 				describe:
 					"Mappa nome della colonna di recurring_info (Ricorrenza)",
 				type: "string",
+			})
+			.option("f", {
+				alias: "fingerprint",
+				describe:
+					"Mappa nome della colonna di fingerprint",
+				type: "string",
 			}).argv;
 
 		// read in .env
@@ -144,6 +155,7 @@ async function main() {
 				code_invoice: options.codeInvoice,
 				url_checkout: options.urlCheckout,
 				recurring_info: options.recurringInfo,
+				fingerprint: options.fingerprint,
 			},
 
 			// or path mapping
@@ -244,49 +256,53 @@ async function main() {
 			encoding: "UTF-8",
 		});
 
-		const dataPerRow = dataFile.split(/\r?\n/);
-		const columnNames = dataPerRow.splice(0, 1)[0].split(";");
-		const columnNamesCopied = [...columnNames];
-		const dataPerRowPerColumn = dataPerRow.map((row) => row.split(";"));
+		const rows = dataFile.split(/\r?\n/);
+		const columnNames = rows.splice(0, 1)[0].split(";");
+		// const columnNamesCopied = [...columnNames];
+		const rowDatas = rows.map((row) => row.split(";"));
 
 		const rawdata = readFileSync(config.mapPath);
 		const mapField = JSON.parse(rawdata);
 
-		if (someValues(config.mapField)) {
-			// se ci sono dati in mapField
-			for (const field in config.mapField) {
-				const name = config.mapField[field];
+		// if (someValues(config.mapField)) {
+		// 	// se ci sono dati in mapField
+		// 	for (const field in config.mapField) {
+		// 		const name = config.mapField[field];
 
-				if (name) {
-					const index = columnNames.indexOf(name);
-					if (index > -1) columnNames[index] = field;
-					// se il nome della colonna mappata non esiste nel csv
-					// e se non è un url checkout o code_invoice
-					else if (
-						index &&
-						field !== "url_checkout" &&
-						field !== "code_invoice"
-					)
-						throw `Errore! La colonna mappata "${config.mapField[field]}" non è presente nel csv`;
-				}
-			}
-		}
+		// 		if (name) {
+		// 			const index = columnNames.indexOf(name);
+		// 			if (index > -1) columnNames[index] = field;
+		// 			// se il nome della colonna mappata non esiste nel csv
+		// 			// e se non è un url checkout o code_invoice
+		// 			else if (
+		// 				index &&
+		// 				field !== "url_checkout" &&
+		// 				field !== "code_invoice"
+		// 			)
+		// 				throw `Errore! La colonna mappata "${config.mapField[field]}" non è presente nel csv`;
+		// 		}
+		// 	}
+		// }
 
-		for (const name in mapField) {
-			const i = columnNames.indexOf(mapField[name]);
-			if (i > -1) columnNames[i] = name;
-			else if (i < 0 && !config.mapField[name]) columnNames.push(name);
-		}
+		// for (const name in mapField) {
+		// 	const i = columnNames.indexOf(mapField[name]);
+		// 	if (i > -1) columnNames[i] = name;
+		// 	else if (i < 0 && !config.mapField[name]) columnNames.push(name);
+		// }
 
-		const records = dataPerRowPerColumn.map((r) =>
-			columnNames.reduce((o, key, i) => ({ ...o, [key]: r[i] }), {})
-		);
+		// const records = rowDatas.map((r) =>
+		// 	columnNames.reduce((o, key, i) => ({ ...o, [key]: r[i] }), {})
+		// );
+
+		const arrayOfObjects = fromArrayToObject(rowDatas, columnNames);
+		const mapMerged = mapMerge(mapField, config.mapField);
+		const records = mapTo(arrayOfObjects, mapMerged);
 
 		const arrayRecordData = [];
 
 		let index = 0;
-		const progressStato = "Stato di generazione: ";
-		progressBar(records.length, index, progressStato);
+		const progressStatus = "Stato di generazione: ";
+		progressBar(records.length, index, progressStatus);
 
 		for (const i in records) {
 			const record = records[i];
@@ -302,25 +318,38 @@ async function main() {
 			arrayRecordData.push(checkoutGenerated);
 
 			index++;
-			progressBar(records.length, index, progressStato);
+			progressBar(records.length, index, progressStatus);
 		}
 
 		process.stdout.write("\r\n");
 
-		columnNamesCopied.push(
+		// columnNamesCopied.push(
+		// 	config.mapField.code_invoice ?? mapField["code_invoice"]
+		// );
+		// columnNamesCopied.push(
+		// 	config.mapField.url_checkout ?? mapField["url_checkout"]
+		// );
+
+		// const arrayContentGenerated = [
+		// 	columnNamesCopied,
+		// 	...arrayRecordData.map((v) => Object.values(v)),
+		// ];
+
+		// const listContent = arrayContentGenerated.map((m) => m.join(";"));
+		// const newContentCsv = `${listContent.join("\r\n")}`;
+
+		columnNames.push(
+			config.mapField.fingerprint ?? mapField["fingerprint"]
+		);
+		columnNames.push(
 			config.mapField.code_invoice ?? mapField["code_invoice"]
 		);
-		columnNamesCopied.push(
+		columnNames.push(
 			config.mapField.url_checkout ?? mapField["url_checkout"]
 		);
 
-		const arrayContentGenerated = [
-			columnNamesCopied,
-			...arrayRecordData.map((v) => Object.values(v)),
-		];
-
-		const listContent = arrayContentGenerated.map((m) => m.join(";"));
-		const newContentCsv = `${listContent.join("\r\n")}`;
+		const recordsMapReversed = mapFrom(arrayRecordData, mapMerged);
+		const newContentCsv = buildContentCsv(recordsMapReversed, columnNames);
 
 		writeFile(config.csvPathOutput, newContentCsv, (err) => {
 			if (err) throw err;
@@ -427,12 +456,13 @@ async function buildCheckout(
 		if (!codeInvoice) throw "Errore! Non è stato generato il code_invoice";
 
 		let copyData = Object.assign({}, data);
+		copyData["fingerprint"] = fingerprint;
 		copyData["code_invoice"] = codeInvoice;
 		copyData["url_checkout"] = `${config.baseUrlCheckout}/${codeInvoice}`;
 
 		return copyData;
 	} catch (err) {
-		throw `\nGenerazione ${index}: ${err}`; // console.error(chalk.red(`\nGenerazione ${index}: ${err}`));
+		throw `\nGenerazione ${index}: ${err}`; // console.error(chalk.red(`\nGenerazione ${index}: ${err}`)); // per non thoware
 	}
 }
 
