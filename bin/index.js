@@ -54,6 +54,11 @@ async function main() {
 					"Inserisci il path del map.json per mappare i titoli di colonna custom (property field custom)",
 				type: "string",
 			})
+			.option("k", {
+				alias: "creditorIBAN",
+				describe: "Inserisci il tuo IBAN",
+				type: "string",
+			})
 			.option("r", {
 				alias: "okRedirect",
 				describe: "Configura un link per il redirect per checkout.",
@@ -148,6 +153,7 @@ async function main() {
 				options.pathOutput ??
 				buildNewFileName(options.path, "generated") ??
 				buildNewFileName(process.env.CSV_PATH, "generated"),
+			creditorIBAN: options.creditorIBAN,
 			okRedirect: options.okRedirect,
 			nokRedirect: options.nokRedirect,
 
@@ -259,6 +265,11 @@ async function main() {
 
 			for (const i in datas) {
 				const res = myscript.default(datas[i]);
+
+				if (config.creditorIBAN) {
+					res.creditor_iban = config.creditorIBAN;
+				}
+
 				assertScript(res, i);
 				records.push(Object.assign(datas[i], res));
 			}
