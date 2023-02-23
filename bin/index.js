@@ -352,7 +352,7 @@ async function buildCheckout(
 		}
 
 		const amount = currencyToFloat(data.amount);
-		const creditorIBAN = data.creditor_iban;
+		const creditorIBAN = data.creditor_iban.replace(/\s/g, "");
 		const remittance = data.remittance;
 		const debtor = data.vat_code;
 		const recurringInfo = data.recurring_info
