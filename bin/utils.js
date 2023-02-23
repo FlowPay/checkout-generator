@@ -1,5 +1,5 @@
 import { basename, dirname, join } from "node:path";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 function buildNewFileName(path, nameToAdd) {
 	let filename = basename(path, ".csv");
@@ -60,40 +60,6 @@ function replaceDataInArray(data, array) {
 
 function someValues(obj) {
 	return Object.values(obj).some((m) => m);
-}
-
-function mapMerge(fromJson, fromOption) {
-	let newMap = Object.assign({}, fromJson);
-
-	for (const [key, value] of Object.entries(fromOption)) {
-		if (value) newMap[key] = value;
-	}
-
-	return newMap;
-}
-
-function mapTo(array, map) {
-	return array.map((a) => {
-		let o = Object.assign({}, a);
-		for (const [key, value] of Object.entries(map)) {
-			if (!a.hasOwnProperty(value)) continue;
-			o[key] = a[value];
-			delete o[value];
-		}
-		return o;
-	});
-}
-
-function mapFrom(array, map) {
-	return array.map((a) => {
-		let o = Object.assign({}, a);
-		for (const [key, value] of Object.entries(map)) {
-			if (!a.hasOwnProperty(key)) continue;
-			o[value] = a[key];
-			delete o[key];
-		}
-		return o;
-	});
 }
 
 function fromArrayToObject(row, columns) {
@@ -166,6 +132,67 @@ function assertConfig(config) {
 		throw 'Errore! Il file richiesto non esiste o non è supportato, deve essere uno script in "mjs".';
 }
 
+function removeEmptyRows(rows) {
+	return rows.filter((r) => /[^;]/gi.test(r));
+}
+
+function csvExtract(path) {
+	const rawFile = readFileSync(path, {
+		encoding: "UTF-8",
+	});
+
+	let rows = rawFile.split(/\r?\n/);
+	rows = removeEmptyRows(rows); // rimuovo righe vuote
+	const columnNames = rows.splice(0, 1)[0].split(";"); // ottieni intestazione colonne
+	const rowDatas = rows.map((row) => row.split(";")); // ottieni dati per riga
+	const datas = fromArrayToObject(rowDatas, columnNames); // genera un array di oggetti da nome colonna
+
+	return { columnNames, rowDatas, datas };
+}
+
+/* Mapping utils */
+
+function mapMerge(fromJson, fromOption) {
+	let newMap = Object.assign({}, fromJson);
+
+	for (const [key, value] of Object.entries(fromOption)) {
+		if (value) newMap[key] = value;
+	}
+
+	return newMap;
+}
+
+function mapTo(array, map) {
+	return array.map((a) => {
+		let o = Object.assign({}, a);
+		for (const [key, value] of Object.entries(map)) {
+			if (!a.hasOwnProperty(value)) continue;
+			o[key] = a[value];
+			delete o[value];
+		}
+		return o;
+	});
+}
+
+function mapFrom(array, map) {
+	return array.map((a) => {
+		let o = Object.assign({}, a);
+		for (const [key, value] of Object.entries(map)) {
+			if (!a.hasOwnProperty(key)) continue;
+			o[value] = a[key];
+			delete o[key];
+		}
+		return o;
+	});
+}
+
+function mapBuilder(mapPath, configMapField) {
+	const rawdata = readFileSync(mapPath);
+	const mapField = JSON.parse(rawdata);
+	const mapMerged = mapMerge(mapField, configMapField);
+	return mapMerged;
+}
+
 export {
 	buildNewFileName,
 	currencyToFloat,
@@ -182,4 +209,7 @@ export {
 	isValidDateTime,
 	assertScript,
 	assertConfig,
+	removeEmptyRows,
+	csvExtract,
+	mapBuilder,
 };

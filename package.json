@@ -18,5 +18,8 @@
   },
   "bin": {
     "fpy-generator": "./bin/index.js"
+  },
+  "devDependencies": {
+    "prettier": "2.8.4"
   }
 }

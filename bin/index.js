@@ -6,7 +6,7 @@ import yargs from "yargs/yargs";
 import process from "node:process";
 import chalk from "chalk";
 
-import { readFileSync, writeFile } from "node:fs";
+import { writeFile } from "node:fs";
 import { join, dirname, basename } from "node:path";
 import { fileURLToPath } from "url";
 import { progressBar } from "./loader.js";
@@ -15,14 +15,14 @@ import {
 	currencyToFloat,
 	yesterdayDate,
 	dateToISOString,
-	fromArrayToObject,
-	mapMerge,
 	mapTo,
 	mapFrom,
 	buildContentCsv,
 	assertScript,
 	assertConfig,
 	isValidDateTime,
+	csvExtract,
+	mapBuilder,
 } from "./utils.js";
 
 async function main() {
@@ -33,7 +33,7 @@ async function main() {
 		const options = yargs(process.argv.slice(2))
 			.usage("Utilizzo: -p <path>")
 			.example(
-				'py-generator --p "<your_path_csv>" --i "<your_client_id>" --s "<your_client_secret>"'
+				'py-generator --p "<your_path_csv>" --i "<your_client_id>" --s "<your_client_secret>"',
 			)
 			.option("p", {
 				alias: "path",
@@ -195,8 +195,8 @@ async function main() {
 
 		console.log(
 			chalk.white(
-				`Avvio generazione da "${basename(config.csvPath)}" ...`
-			)
+				`Avvio generazione da "${basename(config.csvPath)}" ...`,
+			),
 		);
 
 		const token = await axios({
@@ -235,29 +235,18 @@ async function main() {
 			throw "Errore";
 		}
 
-		const tenantId = intro.data.tenant_id ?? intro.data.business_id;
+		const tenantId = intro.data.tenant_id
+			? intro.data.tenant_id
+			: intro.data.business_id;
 
-		const dataFile = readFileSync(config.csvPath, {
-			encoding: "UTF-8",
-		});
-
-		let rows = dataFile.split(/\r?\n/);
-		rows = rows.filter((r) => /[^;]/gi.test(r)); // rimuovi righe vuote
-		const columnNames = rows.splice(0, 1)[0].split(";"); // ottieni intestazione colonne
-		const rowDatas = rows.map((row) => row.split(";")); // ottieni dati per riga
-
-		const rawdata = readFileSync(config.mapPath);
-		const mapField = JSON.parse(rawdata);
-
-		const arrayOfObjects = fromArrayToObject(rowDatas, columnNames);
-		const mapMerged = mapMerge(mapField, config.mapField);
+		const { columnNames, datas } = csvExtract(config.csvPath);
+		const mapField = mapBuilder(config.mapPath, config.mapField);
 		let records = [];
-
 		const isMapMode = !config.scriptPath;
 
 		if (isMapMode)
 			// map mode
-			records = mapTo(arrayOfObjects, mapMerged);
+			records = mapTo(datas, mapField);
 		else {
 			// script mode
 			console.log(chalk.yellow(`Importo script "${config.scriptPath}"`));
@@ -268,10 +257,10 @@ async function main() {
 			console.log(chalk.green(`Importato con successo!`));
 			console.log(chalk.white(`Eseguo script...`));
 
-			for (const i in arrayOfObjects) {
-				const res = myscript.default(arrayOfObjects[i]);
+			for (const i in datas) {
+				const res = myscript.default(datas[i]);
 				assertScript(res, i);
-				records.push(Object.assign(arrayOfObjects[i], res));
+				records.push(Object.assign(datas[i], res));
 			}
 
 			console.log(chalk.green(`Script eseguito con sucecsso!`));
@@ -291,7 +280,7 @@ async function main() {
 				tenantId,
 				tokenType,
 				accessToken,
-				config
+				config,
 			);
 
 			arrayRecordData.push(checkoutGenerated);
@@ -315,25 +304,19 @@ async function main() {
 			});
 		}
 
-		columnNames.push(
-			config.mapField.fingerprint ?? mapField["fingerprint"]
-		);
-		columnNames.push(
-			config.mapField.code_invoice ?? mapField["code_invoice"]
-		);
-		columnNames.push(
-			config.mapField.url_checkout ?? mapField["url_checkout"]
-		);
+		columnNames.push(mapField.fingerprint);
+		columnNames.push(mapField.code_invoice);
+		columnNames.push(mapField.url_checkout);
 
-		const recordsMapReversed = mapFrom(arrayRecordData, mapMerged);
+		const recordsMapReversed = mapFrom(arrayRecordData, mapField);
 		const newContentCsv = buildContentCsv(recordsMapReversed, columnNames);
 
 		writeFile(config.csvPathOutput, newContentCsv, (err) => {
 			if (err) throw err;
 			console.log(
 				chalk.green(
-					`Checkout generati con successo in "${config.csvPathOutput}"`
-				)
+					`Checkout generati con successo in "${config.csvPathOutput}"`,
+				),
 			);
 		});
 	} catch (err) {
@@ -347,14 +330,14 @@ async function buildCheckout(
 	tenantId,
 	tokenType,
 	accessToken,
-	config
+	config,
 ) {
 	try {
 		// todo: aggiungere un assert valori
 
 		if (
 			!isValidDateTime(
-				data.expire_date
+				data.expire_date,
 			) /*&& Date.parse(data.expire_date) == 0*/
 		) {
 			throw "Errore! Il formato della data non è corretto. Formato corretto YYYY-MM-DD oppure YYYY-MM-DD";

@@ -131,7 +131,7 @@ Lo script dovrà avere la seguente struttura.
 export default function (record) {
 	/*
 		record sarà un oggetto di un array
-		con property il nome della colonna corrisponde
+		con property il nome della colonna corrispondente
 	*/
 
 	// ...
