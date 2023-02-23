@@ -71,6 +71,7 @@ Lo script è in grado di accettare alre opzioni per esempio il link di redirect 
 | -o        | --pathOutput   |                    | Inserisci un path per output del csv generato. Se omesso sarà nella stessa cartella del file caricato. | string |
 | -j        | --pathMap      | MAP_PATH           | Inserisci il path del map.json per mappare i titoli di colonna custom (property field custom).         | string |
 | -y        | --pathScript   | SCRIPT_PATH        | Inserisci il path del tuo script che verrà eseguito per ogni riga del csv.                             | string |
+| -k        | --creditorIBAN |                    | Inserisci il tuo IBAN se si desidera di default, sarà impostato per ogni checkout generato.            | string |
 | -r        | --okRedirect   |                    | Configura un link per il redirect per checkout.                                                        | string |
 | -n        | --nokRedirect  |                    | Configura un link per il redirect nel caso non esegua con successo il checkout.                        | string |
 | -i        | --clientId     | CLIENT_ID          | Configura il tuo client_id.                                                                            | string |
