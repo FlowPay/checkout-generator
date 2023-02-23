@@ -148,6 +148,8 @@ export default function (record) {
 }
 ```
 
+> Esempio di script `.msj`lo puoi trovare [qui](./example/esempio.mjs)
+
 Una volta scritto lo script con la propria logica eseguire **Checkout Generator** aggingedo il parametro pathScirpt come in questo esempio.
 
 ```sh
