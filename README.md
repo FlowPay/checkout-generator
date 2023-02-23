@@ -47,6 +47,8 @@ Per windows invece segui queste [istruzioni](https://phoenixnap.com/kb/windows-s
 
 È importante sapere che oltre alle chiavi utili per accedere alle api di **flowpay** è necessario impostare un input path del csv da cui generare il ceckout. Oltre al parametro di input è possibile impostare il path output per scegliere il nome e la directory del csv generato, se si desidera generare nella stessa cartella non importare alcun parametro di output. Vedi gli esempi qui.
 
+> È possibile configurare lo script adattandolo alla propria situazione con [Mapping](#mapping) o [Scripting](#scripting)
+
 ```sh
 # esegui questa istruzione con chiavi impostate nella variabile di ambiente
 fpy-generator -p "<your_path_csv>"
@@ -59,22 +61,20 @@ fpy-generator -p "<your_path_csv>" -o "<your_path_output_csv>"
 fpy-generator -p "<your_path_csv>" -i "<your_client_id>" -s "<your_client_secret>"
 ```
 
-> È possibile configurare lo script adattandolo alla propria situazione con [Mapping](#mapping) o [Scripting](#scripting)
-
 ## Opzioni
 
 Lo script è in grado di accettare alre opzioni per esempio il link di redirect di un checkout. Qui tutte le opzioni che accetta lo script.
 
-| Parametri | Alias          | Descrizione                                                                                            | Tipo   |
-| --------- | -------------- | ------------------------------------------------------------------------------------------------------ | ------ |
-| -p        | --path         | Inserisci il csv path del file da cui generare i checkout                                              | string |
-| -o        | --pathOutput   | Inserisci un path per output del csv generato. Se omesso sarà nella stessa cartella del file caricato. | string |
-| -j        | --pathMap      | Inserisci il path del map.json per mappare i titoli di colonna custom (property field custom).         | string |
-| -y        | --pathScript   | Inserisci il path del tuo script che verrà eseguito per ogni riga del csv.                             | string |
-| -r        | --okRedirect   | Configura un link per il redirect per checkout.                                                        | string |
-| -n        | --nokRedirect  | Configura un link per il redirect nel caso non esegua con successo il checkout.                        | string |
-| -i        | --clientId     | Configura il tuo client_id.                                                                            | string |
-| -s        | --clientSecret | Configura il tuo client_secret.                                                                        | string |
+| Parametri | Alias          | Variabile Ambiente | Descrizione                                                                                            | Tipo   |
+| --------- | -------------- | ------------------ | ------------------------------------------------------------------------------------------------------ | ------ |
+| -p        | --path         | CSV_PATH           | Inserisci il csv path del file da cui generare i checkout                                              | string |
+| -o        | --pathOutput   |                    | Inserisci un path per output del csv generato. Se omesso sarà nella stessa cartella del file caricato. | string |
+| -j        | --pathMap      | MAP_PATH           | Inserisci il path del map.json per mappare i titoli di colonna custom (property field custom).         | string |
+| -y        | --pathScript   | SCRIPT_PATH        | Inserisci il path del tuo script che verrà eseguito per ogni riga del csv.                             | string |
+| -r        | --okRedirect   |                    | Configura un link per il redirect per checkout.                                                        | string |
+| -n        | --nokRedirect  |                    | Configura un link per il redirect nel caso non esegua con successo il checkout.                        | string |
+| -i        | --clientId     | CLIENT_ID          | Configura il tuo client_id.                                                                            | string |
+| -s        | --clientSecret | CLIENT_SECRET      | Configura il tuo client_secret.                                                                        | string |
 
 ## Mapping {#scripting}
 
