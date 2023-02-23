@@ -76,7 +76,7 @@ Lo script è in grado di accettare alre opzioni per esempio il link di redirect 
 | -i        | --clientId     | CLIENT_ID          | Configura il tuo client_id.                                                                            | string |
 | -s        | --clientSecret | CLIENT_SECRET      | Configura il tuo client_secret.                                                                        | string |
 
-## Mapping {#scripting}
+## Mapping
 
 È possibile mappare le colonne del proprio csv con due modalità diverse di configurazione:
 
@@ -121,7 +121,7 @@ Oppure se si desidera mappare una sola colonna o tutte attravero opzioni di scri
 | -ri       | --recurringInfo | Mappa nome della colonna di recurring_info (Ricorrenza).                 | string |
 | -f        | --fingerprint   | Mappa nome della colonna di fingerprint.                                 | string |
 
-# Scripting {#scripting}
+# Scripting
 
 Come soluzione custom e diversa dal mapping, è possibile eseguire uno script `.mjs` con la propria business logic per ogni record del csv, dovrà dunque restituire un oggetto che sarà interpetato dal **Checkout Generator**. Lo scripting effettuerà l'override del mapping per tutte le poprietà tranne per --urlCheckout, --recurringInfo e --fingerprint.
 
