@@ -1,0 +1,21 @@
+{
+	"$schema": "https://json.schemastore.org/tsconfig",
+	"display": "Node 18",
+
+	"compilerOptions": {
+		"target": "es5",
+		"module": "es2022",
+		"sourceMap": true,
+		"declaration": true,
+		"strict": true,
+		"outDir": "./lib",
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"allowJs": true,
+		"moduleResolution": "nodenext",
+		"moduleDetection": "force"
+	},
+
+	"include": ["src"],
+	"exclude": ["node_modules", "**/__tests__/*"]
+}
