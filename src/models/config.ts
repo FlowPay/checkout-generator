@@ -1,11 +1,12 @@
 import { existsSync } from "fs";
+import { MAP_PATH } from "../constants/path.js";
 
 export interface IConfig {
-	clientId: string | undefined;
-	clientSecret: string | undefined;
+	clientId: string;
+	clientSecret: string;
 	csvPath: string;
 	scriptPath: string;
-	csvPathOutput: string | undefined;
+	csvPathOutput: string;
 	creditorIBAN: string | undefined;
 	okRedirect: string | undefined;
 	nokRedirect: string | undefined;
@@ -29,27 +30,39 @@ export interface IConfig {
 	mapPath: string;
 
 	// baseUrl
-	baseUrlOauth: string | undefined;
-	baseUrlOpenId: string | undefined;
-	baseUrlPlatform: string | undefined;
-	baseUrlCheckout: string | undefined;
-	baseUrl: string | undefined;
+	baseUrlOauth: string;
+	baseUrlOpenId: string;
+	baseUrlPlatform: string;
+	baseUrlCheckout: string;
+	baseUrl: string;
 
 	// assert: () => void;
 }
 
 export class Config implements IConfig {
-	constructor() {
-		this._assert();
+	constructor(
+		csvPath: string,
+		csvPathOutput?: string,
+		nameToAddOutput = "generated",
+		mapPath?: string,
+	) {
+		this.csvPath = csvPath;
+		this.mapPath = mapPath ? mapPath : MAP_PATH;
+		// this.csvPathOutput = csvPathOutput
+		// 	? csvPathOutput
+		// 	: buildNewFileName(csvPath, nameToAddOutput); // todo: da correggere
+
+		// this.assert();
 	}
 
-	csvPath = "";
-	scriptPath = "";
-	mapPath = "map.json";
+	csvPath;
+	csvPathOutput!: string;
+	scriptPath!: string;
+	mapPath: string;
 
-	clientId: string | undefined;
-	clientSecret: string | undefined;
-	csvPathOutput: string | undefined;
+	clientId!: string;
+	clientSecret!: string;
+
 	creditorIBAN: string | undefined;
 	okRedirect: string | undefined;
 	nokRedirect: string | undefined;
@@ -66,13 +79,13 @@ export class Config implements IConfig {
 		fingerprint: string | undefined;
 	};
 
-	baseUrlOauth: string | undefined;
-	baseUrlOpenId: string | undefined;
-	baseUrlPlatform: string | undefined;
-	baseUrlCheckout: string | undefined;
-	baseUrl: string | undefined;
+	baseUrlOauth!: string;
+	baseUrlOpenId!: string;
+	baseUrlPlatform!: string;
+	baseUrlCheckout!: string;
+	baseUrl!: string;
 
-	private _assert = () => {
+	assert() {
 		if (!this.clientId || !this.clientSecret)
 			throw "Attenzione! Non ho il client id o il client secret";
 
@@ -97,5 +110,5 @@ export class Config implements IConfig {
 				!/^.*\.(mjs)$/gi.test(this.scriptPath))
 		)
 			throw 'Errore! Il file richiesto non esiste o non è supportato, deve essere uno script in "mjs".';
-	};
+	}
 }

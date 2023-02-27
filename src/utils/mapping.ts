@@ -1,15 +1,16 @@
 import { readFileSync } from "fs";
+import { IMapping } from "../models/mapping.js";
 
 export class Mapping {
-	constructor(path: string, mapField: [s: string]) {
+	constructor(path: string, mapField: IMapping) {
 		this.path = path;
 		this.mapField = mapField;
 	}
 
 	path: string;
-	mapField: [s: string];
+	mapField: IMapping;
 
-	merge(fromJson: [s: string], fromOption: [s: string]): [s: string] {
+	merge(fromJson: IMapping, fromOption: IMapping): IMapping {
 		let newMap: any = Object.assign({}, fromJson);
 
 		for (const [key, value] of Object.entries(fromOption)) {

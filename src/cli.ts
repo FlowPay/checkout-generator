@@ -4,19 +4,22 @@ import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // @ts-ignore-start
-import axios from "../node_modules/axios/lib/axios.js";
 import chalk from "../node_modules/chalk/source/index.js";
 import yargs from "yargs/yargs";
 import dotenv from "dotenv";
 //@ts-ignore-end
 
-import { buildContentCsv, buildNewFileName, csvExtract } from "./utils/csv.js";
+import { buildContentCsv, buildNewFileName } from "./utils/csv.js";
 import { Mapping } from "./utils/mapping.js";
-import { Config } from "./models/config.js";
+import { Config, IConfig } from "./models/config.js";
 import { Loader } from "./utils/loader.js";
-import { writeFile } from "node:fs";
 import { Checkout } from "./checkout.js";
 import { ITransferInput, RecurringInfo } from "./models/trasnfer.js";
+import { Http } from "./utils/http.js";
+import { CSV } from "./csv.js";
+import { assertScript } from "./utils/assert.js";
+import { IMapping } from "./models/mapping.js";
+import { isMap } from "node:util/types";
 
 export class CommandLineInterface {
 	async start() {
@@ -26,9 +29,6 @@ export class CommandLineInterface {
 
 			const options = await yargs(process.argv.slice(2))
 				.usage("Utilizzo: -p <path>")
-				// .example(
-				// 	'py-generator --p "<your_path_csv>" --i "<your_client_id>" --s "<your_client_secret>"',
-				// )
 				.option("p", {
 					alias: "path",
 					describe:
@@ -140,7 +140,7 @@ export class CommandLineInterface {
 
 			const isDevelopment = process.env.NODE_ENV === "development";
 
-			const config = {
+			const configSetup = {
 				clientId: options.clientId ?? process.env.CLIENT_ID,
 				clientSecret: options.clientSecret ?? process.env.CLIENT_SECRET,
 				csvPath: options.path ?? process.env.CSV_PATH,
@@ -148,7 +148,10 @@ export class CommandLineInterface {
 				csvPathOutput:
 					options.pathOutput ??
 					buildNewFileName(options.path as string, "generated") ??
-					buildNewFileName(process.env.CSV_PATH, "generated"),
+					buildNewFileName(
+						process.env.CSV_PATH as string,
+						"generated",
+					),
 				creditorIBAN: options.creditorIBAN,
 				okRedirect: options.okRedirect,
 				nokRedirect: options.nokRedirect,
@@ -175,25 +178,31 @@ export class CommandLineInterface {
 
 				// baseUrl
 				baseUrlOauth: isDevelopment
-					? (process.env.BASE_URL_OAUTH as string)
+					? process.env.BASE_URL_OAUTH!
 					: "https://core.flowpay.it/api/oauth",
 				baseUrlOpenId: isDevelopment
-					? (process.env.BASE_URL_OPENID as string)
+					? process.env.BASE_URL_OPENID!
 					: "https://core.flowpay.it/api/openid",
 				baseUrlPlatform: isDevelopment
-					? (process.env.BASE_URL_PLATFORM as string)
+					? process.env.BASE_URL_PLATFORM!
 					: "https://app.flowpay.it/api",
 				baseUrlCheckout: isDevelopment
-					? (process.env.BASE_URL_CHECKOUT as string)
+					? process.env.BASE_URL_CHECKOUT!
 					: "https://checkout.flowpay.it",
 				baseUrl: isDevelopment
-					? (process.env.BASE_URL as string)
+					? process.env.BASE_URL!
 					: "https://app.flowpay.it/api",
-			} as Config;
+			} as IConfig;
+
+			// crea un istanza di config da IConfig
+			const config: Config = Object.assign(
+				new Config(configSetup.csvPath),
+				configSetup,
+			);
 
 			// assert di config
 			// dunque valida i dati inseriti
-			// assertConfig(config);
+			config.assert();
 
 			console.log(
 				chalk.white(
@@ -201,39 +210,24 @@ export class CommandLineInterface {
 				),
 			);
 
-			const token = await axios({
-				method: "post",
-				url: `${config.baseUrlOauth}/token`,
-				headers: {
-					"content-type": "application/x-www-form-urlencoded",
-				},
-				data: {
-					client_id: config.clientId,
-					client_secret: config.clientSecret,
-					scope: "transfer:read transfer:write business:read",
-					grant_type: "client_credentials",
-				},
-			});
-
-			if (token.status !== 200) {
-				throw "Authentication broken";
-			}
+			const http = new Http();
+			const scope = "transfer:read transfer:write business:read";
+			await http.token(
+				config.baseUrlOauth,
+				config.clientId,
+				config.clientSecret,
+				scope,
+				"client_credentials",
+			);
 
 			console.log(chalk.green("Autenticazione eseguita con successo!"));
 
-			const accessToken = token.data.access_token;
-			const tokenType = token.data.token_type;
-
-			const intro = await axios({
-				method: "post",
-				url: `${config.baseUrlOpenId}/token/introspection`,
-				headers: {
-					"content-type": "application/x-www-form-urlencoded",
-				},
-				data: {
-					token: accessToken,
-				},
-			});
+			const intro = await http.post(
+				`${config.baseUrlOpenId}/token/introspection`,
+				{ "content-type": "application/x-www-form-urlencoded" },
+				{ token: http.accessToken },
+				false,
+			);
 
 			if (intro.status !== 200) {
 				throw "Errore";
@@ -243,10 +237,23 @@ export class CommandLineInterface {
 				? intro.data.tenant_id
 				: intro.data.business_id;
 
-			const { columnNames, datas } = csvExtract(config.csvPath);
+			const businessCurrentUrl = `${config.baseUrlPlatform}/${tenantId}/businesses/current`;
+			const resBusinessCurrent = await http.get(businessCurrentUrl);
+
+			const vatCodeCreditor =
+				resBusinessCurrent.data.vatCountryID +
+				resBusinessCurrent.data.vatCode;
+
+			// const { columnNames, datas } = csvExtract(config.csvPath);
 			// const mapField = mapBuilder(config.mapPath, config.mapField);
 
-			const mapping = new Mapping(config.mapPath, config.mapField as any);
+			const csv = new CSV(config.csvPath, config.csvPathOutput);
+			const { columnNames, datas } = csv.readCsv();
+
+			const mapping = new Mapping(
+				config.mapPath,
+				config.mapField as IMapping,
+			);
 			mapping.build();
 
 			let records = [];
@@ -267,14 +274,14 @@ export class CommandLineInterface {
 				console.log(chalk.green(`Importato con successo!`));
 				console.log(chalk.white(`Eseguo script...`));
 
-				for (const i in datas) {
+				for (let i = 0; i < datas.length; i++) {
 					const res = myscript.default(datas[i]);
 
 					if (config.creditorIBAN) {
 						res.creditor_iban = config.creditorIBAN;
 					}
 
-					// assertScript(res, i);
+					assertScript(res, i, basename(config.scriptPath));
 					records.push(Object.assign(datas[i], res));
 				}
 
@@ -287,38 +294,42 @@ export class CommandLineInterface {
 			const loader = new Loader(records.length, progressStatus);
 			loader.start();
 
-			for (const i in records) {
+			for (let i = 0; i < records.length; i++) {
 				const record = records[i];
 
 				const recurringInfo =
 					record.recurring_info > 1
-						? new RecurringInfo(record.recurring_info)
+						? new RecurringInfo(Math.floor(record.recurring_info))
 						: undefined;
 
 				const transfer: ITransferInput = {
 					amount: record.amount,
 					creditorIban: record.creditor_iban,
-					creditor: "",
+					creditor: vatCodeCreditor,
 					date: record.expire_date,
-					debtor: record.vatCode,
+					debtor: record.vat_code,
 					remittance: record.remittance,
 					recurringInfo: recurringInfo,
 				};
 
 				const newCheckout = new Checkout(
 					transfer,
-					tokenType,
-					accessToken,
-					config.baseUrlPlatform as string, // todo: da risolvere undefined di .env
-					config.baseUrlCheckout as string,
+					http.tokenType!,
+					http.accessToken!,
+					config.baseUrlPlatform!, // todo: da risolvere undefined di .env
+					config.baseUrlCheckout!,
 				);
 
-				const checkoutGenerated = await newCheckout.build(
-					parseInt(i),
-					tenantId,
-				);
+				const checkoutGenerated = await newCheckout.build(i, tenantId);
 
-				arrayRecordData.push(checkoutGenerated);
+				const recordData = {
+					...record,
+					fingerprint: checkoutGenerated.fingerprint,
+					code_invoice: checkoutGenerated.codeInvoice,
+					url_checkout: checkoutGenerated.url,
+				}; // ricostruisco l'oggetto per il mapping reverse
+
+				arrayRecordData.push(recordData);
 				loader.next();
 			}
 
@@ -327,21 +338,19 @@ export class CommandLineInterface {
 			if (!isMapMode) {
 				// rimuovi proprietà aggiunte per business logic
 				// che non devono essere stampate
-				// todo: da correggere
-				// arrayRecordData.forEach((m) => {
-				// 	delete m.recurring_info;
-				// 	delete m.creditor_iban;
-				// 	delete m.vat_code;
-				// 	delete m.amount;
-				// 	delete m.remittance;
-				// 	delete m.date;
-				// });
+				arrayRecordData.forEach((m) => {
+					delete m.recurring_info;
+					delete m.creditor_iban;
+					delete m.vat_code;
+					delete m.amount;
+					delete m.remittance;
+					delete m.expire_date;
+				});
 			}
 
-			// todo: da correggere
-			// columnNames.push(mapping.mapField["fingerprint"]);
-			// columnNames.push(mapping.mapField["code_invoice"]);
-			// columnNames.push(mapping.mapField[0]);
+			columnNames.push(mapping.mapField["fingerprint"]);
+			columnNames.push(mapping.mapField["code_invoice"]);
+			columnNames.push(mapping.mapField["url_checkout"]);
 
 			const recordsMapReversed = mapping.from(arrayRecordData);
 			const newContentCsv = buildContentCsv(
@@ -349,14 +358,13 @@ export class CommandLineInterface {
 				columnNames,
 			);
 
-			writeFile(config.csvPathOutput as string, newContentCsv, (err) => {
-				if (err) throw err;
-				console.log(
-					chalk.green(
-						`Checkout generati con successo in "${config.csvPathOutput}"`,
-					),
-				);
-			});
+			await csv.writeCsv(newContentCsv);
+
+			console.log(
+				chalk.green(
+					`Checkout generati con successo in "${config.csvPathOutput}"`,
+				),
+			);
 		} catch (err) {
 			console.error(chalk.red(err));
 		}

@@ -1,13 +1,25 @@
 //@ts-ignore
-import axios from "../node_modules/axios/lib/axios.js";
+import axios from "../../node_modules/axios/lib/axios.js";
 
 export class Http {
-	constructor() {}
+	constructor(accessToken?: string, tokenType?: string) {
+		this.tokenType = tokenType;
+		this.accessToken = accessToken;
+	}
 
-	accessToken: string | undefined;
-	tokenType: string | undefined;
+	accessToken?: string;
+	tokenType?: string;
 
-	async token(baseUrlOauth: string, clientId: string, clientSecret: string) {
+	scope: string | undefined;
+	grantType: string | undefined;
+
+	async token(
+		baseUrlOauth: string,
+		clientId: string,
+		clientSecret: string,
+		scope: string,
+		grantType: string,
+	) {
 		const token = await this.post(
 			`${baseUrlOauth}/token`,
 			{
@@ -16,8 +28,8 @@ export class Http {
 			{
 				client_id: clientId,
 				client_secret: clientSecret,
-				scope: "transfer:read transfer:write business:read",
-				grant_type: "client_credentials",
+				grant_type: grantType,
+				scope,
 			},
 		);
 
@@ -25,8 +37,18 @@ export class Http {
 			throw "Authentication broken";
 		}
 
-		this.accessToken = token.data.access_token;
-		this.tokenType = token.data.token_type;
+		this.setAccessToken(token.data.access_token);
+		this.setTokeType(token.data.token_type);
+
+		return token;
+	}
+
+	setAccessToken(value: string) {
+		this.accessToken = value;
+	}
+
+	setTokeType(value: string) {
+		this.tokenType = value;
 	}
 
 	async post(url: string, headers: {}, data: {}, auth = true) {
@@ -43,7 +65,7 @@ export class Http {
 		});
 	}
 
-	async get(url: string, headers: {}, data: {}, auth = true) {
+	async get(url: string, headers?: {}, data?: {}, auth = true) {
 		return axios({
 			method: "get",
 			url: url,

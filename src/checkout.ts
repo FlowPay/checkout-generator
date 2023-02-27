@@ -1,9 +1,8 @@
-// @ts-ignore
-import * as axios from "../node_modules/axios/dist/axios.js";
-
+import { ICheckoutOutput } from "./models/checkout.js";
 import { ITransferInput } from "./models/trasnfer.js";
 import { currencyToFloat } from "./utils/currency.js";
 import { dateToISOString, yesterdayDate } from "./utils/date.js";
+import { Http } from "./utils/http.js";
 
 export class Checkout {
 	constructor(
@@ -33,17 +32,9 @@ export class Checkout {
 	nokRedirect: string;
 	okRedirect: string;
 
-	async build(index: number, tenantId: string): Promise<string> {
+	async build(index: number, tenantId: string): Promise<ICheckoutOutput> {
 		try {
 			// todo: aggiungere un assert valori
-
-			// if (
-			// 	!isValidDate(
-			// 		this.transfer.date,
-			// 	) /*&& Date.parse(this.transfer.expire_date) == 0*/
-			// ) {
-			// 	throw "Errore! Il formato della this.transfer non è corretto. Formato corretto YYYY-MM-DD oppure YYYY-MM-DD";
-			// }
 
 			if (!this.transfer.creditorIban) {
 				throw "Errore! Non esiste un IBAN del creditore.";
@@ -60,69 +51,60 @@ export class Checkout {
 			// const recurringInfo = this.transfer.recurringInfo
 			// 	? parseInt(this.transfer.recurringInfo)
 			// 	: 0;
+			const vatCodeCreditor = this.transfer.creditor;
 			const recurringInfo = this.transfer.recurringInfo;
 			const date = this.transfer.date
 				? dateToISOString(new Date(this.transfer.date))
 				: dateToISOString(yesterdayDate());
 
-			const res = await axios({
-				method: "get",
-				url: `${this.baseUrl}/${tenantId}/businesses/current`,
-				headers: {
-					Authorization: `${this.tokenType} ${this.accessToken}`,
-				},
-			});
+			const transferUrl = `${this.baseUrl}/${tenantId}/transfers`;
+			const transferData = {
+				amount: amount,
+				creditor: vatCodeCreditor,
+				creditorIBAN: creditorIBAN,
+				remittance: remittance,
+				debtor: vatCodeDebtor,
+				date: date,
+				recurringInfo: recurringInfo,
+			};
 
-			const vatCodeCreditor = res.data.vatCountryID + res.data.vatCode;
-
-			const resData = await axios({
-				method: "post",
-				url: `${this.baseUrl}/${tenantId}/transfers`,
-				headers: {
-					"content-type": "application/json",
-					Authorization: `${this.tokenType} ${this.accessToken}`,
-				},
-				data: {
-					amount: amount,
-					creditor: vatCodeCreditor,
-					creditorIBAN: creditorIBAN,
-					remittance: remittance,
-					debtor: vatCodeDebtor,
-					date: date,
-					recurringInfo: recurringInfo,
-				},
-			});
+			const http = new Http(this.accessToken, this.tokenType);
+			const resData = await http.post(
+				transferUrl,
+				{}, // no headers aggiuntivi
+				transferData,
+			);
 
 			const fingerprint = resData.data.fingerprint;
 			if (!fingerprint) {
 				throw `Errore! Non ho ottenuto il fingerprint`;
 			}
 
-			const resFinger = await axios({
-				method: "post",
-				url: `${this.baseUrl}/${tenantId}/checkout`,
-				headers: {
-					"content-type": "application/json",
-					Authorization: `${this.tokenType} ${this.accessToken}`,
-				},
-				data: {
-					fingerprint: fingerprint,
-					nokRedirect: this.nokRedirect,
-					okRedirect: this.okRedirect,
-					type: "transfer",
-				},
-			});
+			const checkoutUrl = `${this.baseUrl}/${tenantId}/checkout`;
+			const checkoutData = {
+				fingerprint: fingerprint,
+				nokRedirect: this.nokRedirect,
+				okRedirect: this.okRedirect,
+				type: "transfer",
+			};
+
+			const resFinger = await http.post(
+				checkoutUrl,
+				{}, // headers aggiuntivi
+				checkoutData,
+			);
 
 			const codeInvoice = resFinger.data.code;
 			if (!codeInvoice)
 				throw "Errore! Non è stato generato il code_invoice";
 
-			// let copyData = Object.assign({}, this.transfer);
-			// copyData["fingerprint"] = fingerprint;
-			// copyData["code_invoice"] = codeInvoice;
-			// copyData["url_checkout"] = `${this.baseUrlCheckout}/${codeInvoice}`;
+			const result: ICheckoutOutput = {
+				url: `${this.baseUrlCheckout}/${codeInvoice}`,
+				fingerprint,
+				codeInvoice,
+			};
 
-			return codeInvoice;
+			return result;
 		} catch (err) {
 			throw `\nGenerazione ${index}: ${err}`; // console.error(chalk.red(`\nGenerazione ${index}: ${err}`)); // per non thoware
 		}

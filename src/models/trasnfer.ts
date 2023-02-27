@@ -2,7 +2,6 @@ export interface ITransferInput {
 	recurringInfo?: IRecurringInfo;
 	creditor: string;
 	creditorIban: string;
-	// vatCode: string;
 	date: Date;
 	amount: number;
 	remittance: string;
@@ -18,7 +17,6 @@ export interface ITransferOutput {
 export class Transfer implements ITransferInput, ITransferOutput {
 	constructor(
 		creditorIban: string,
-		// vatCode: string,
 		date: Date,
 		amount: number,
 		remittance: string,
@@ -28,7 +26,6 @@ export class Transfer implements ITransferInput, ITransferOutput {
 		recurringInfo?: IRecurringInfo,
 	) {
 		this.creditorIban = creditorIban;
-		// this.vatCode = vatCode;
 		this.date = date;
 		this.amount = amount;
 		this.remittance = remittance;
@@ -38,32 +35,30 @@ export class Transfer implements ITransferInput, ITransferOutput {
 		this.fingerprint = fingerprint;
 	}
 	fingerprint: string;
-
 	creditor: string;
 	debtor: string;
 	recurringInfo?: IRecurringInfo;
 	creditorIban: string;
-	// vatCode: string;
 	date: Date;
 	amount: number;
 	remittance: string;
 
-	assert(i?: string) {
-		if (!this.creditorIban || !this.hasOwnProperty("creditor_iban"))
-			throw `Errore! creditor_iban è undefined nella riga ${i}`;
+	// assert(i?: string) {
+	// 	if (!this.creditorIban || !this.hasOwnProperty("creditor_iban"))
+	// 		throw `Errore! creditor_iban è undefined nella riga ${i}`;
 
-		if (!this.debtor || !this.hasOwnProperty("debtor"))
-			throw `Errore! vat_code è undefined nella riga ${i}`;
+	// 	if (!this.debtor || !this.hasOwnProperty("debtor"))
+	// 		throw `Errore! vat_code è undefined nella riga ${i}`;
 
-		if (!this.amount || !this.hasOwnProperty("amount"))
-			throw `Errore! amount è undefined nella riga ${i}`;
+	// 	if (!this.amount || !this.hasOwnProperty("amount"))
+	// 		throw `Errore! amount è undefined nella riga ${i}`;
 
-		if (!this.remittance || !this.hasOwnProperty("remittance"))
-			throw `Errore! remittance è undefined nella riga ${i}`;
+	// 	if (!this.remittance || !this.hasOwnProperty("remittance"))
+	// 		throw `Errore! remittance è undefined nella riga ${i}`;
 
-		if (!this.date || !this.hasOwnProperty("expire_date"))
-			throw `Errore! date è undefined nella riga ${i}`;
-	}
+	// 	if (!this.date || !this.hasOwnProperty("date"))
+	// 		throw `Errore! date è undefined nella riga ${i}`;
+	// }
 }
 
 export interface IRecurringInfo {
