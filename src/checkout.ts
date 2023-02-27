@@ -91,7 +91,7 @@ export class Checkout {
 
 			const resFinger = await http.post(
 				checkoutUrl,
-				{}, // headers aggiuntivi
+				{}, // no headers aggiuntivi
 				checkoutData,
 			);
 

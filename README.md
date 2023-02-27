@@ -110,17 +110,17 @@ fpy-generator -p "<your_path_csv>" ...altri comandi -j "<your_path_map>"
 
 Oppure se si desidera mappare una sola colonna o tutte attravero opzioni di script, segui questa tabella.
 
-| Parametri | Alias           | Descrizione                                                              | Tipo   |
-| --------- | --------------- | ------------------------------------------------------------------------ | ------ |
-| -v        | --vatCode       | Mappa nome della colonna di vat_code (Partita IVA).                      | string |
-| -c        | --creditorIban  | Mappa nome della colonna di creditor_iban (Creditore IBAN).              | string |
-| -a        | --amount        | Mappa nome della colonna di amount (Importo).                            | string |
-| -e        | --expireDate    | Mappa nome della colonna di expire_date (Data di scadenza).              | string |
-| -r        | --remittance    | Mappa nome della colonna di remittance (Causale).                        | string |
-| -d        | --codeInvoice   | Mappa nome della colonna di code_invoice (Codice checkout **generato**). | string |
-| -u        | --urlCheckout   | Mappa nome della colonna di url_checkout (Url checkout **generato**).    | string |
-| -ri       | --recurringInfo | Mappa nome della colonna di recurring_info (Ricorrenza).                 | string |
-| -f        | --fingerprint   | Mappa nome della colonna di fingerprint.                                 | string |
+| Parametri | Alias           | Descrizione                                                                                                                                  | Tipo   |
+| --------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| -v        | --vatCode       | Mappa nome della colonna di vat_code (Partita IVA).                                                                                          | string |
+| -c        | --creditorIban  | Mappa nome della colonna di creditor_iban (Creditore IBAN).                                                                                  | string |
+| -a        | --amount        | Mappa nome della colonna di amount (Importo).                                                                                                | string |
+| -e        | --expireDate    | Mappa nome della colonna di expire_date (Data di scadenza). Se non trova la property di riferimento imposta automaticamente la data di ieri. | string |
+| -r        | --remittance    | Mappa nome della colonna di remittance (Causale).                                                                                            | string |
+| -d        | --codeInvoice   | Mappa nome della colonna di code_invoice (Codice checkout **generato**).                                                                     | string |
+| -u        | --urlCheckout   | Mappa nome della colonna di url_checkout (Url checkout **generato**).                                                                        | string |
+| -ri       | --recurringInfo | Mappa nome della colonna di recurring_info (Ricorrenza).                                                                                     | string |
+| -f        | --fingerprint   | Mappa nome della colonna di fingerprint.                                                                                                     | string |
 
 # Scripting
 
