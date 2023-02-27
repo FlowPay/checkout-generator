@@ -19,7 +19,6 @@ import { Http } from "./utils/http.js";
 import { CSV } from "./csv.js";
 import { assertScript } from "./utils/assert.js";
 import { IMapping } from "./models/mapping.js";
-import { isMap } from "node:util/types";
 
 export class CommandLineInterface {
 	async start() {
@@ -370,3 +369,6 @@ export class CommandLineInterface {
 		}
 	}
 }
+
+const cli = new CommandLineInterface();
+cli.start();

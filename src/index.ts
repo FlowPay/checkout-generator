@@ -1,4 +1,4 @@
-import { CommandLineInterface } from "./cli.js";
+import { Checkout } from "./checkout.js";
+import { CSV } from "./csv.js";
 
-const cli = new CommandLineInterface();
-cli.start();
+export { Checkout, CSV };

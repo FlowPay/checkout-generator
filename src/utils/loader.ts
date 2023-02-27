@@ -21,7 +21,13 @@ export class Loader {
 
 	start = () => this.progressBar(this.i);
 
-	next = (i?: number) => this.progressBar(i ? i : this.i++);
+	next = (i?: number) => {
+		if (!i) {
+			this.i++;
+			i = this.i;
+		}
+		this.progressBar(i);
+	};
 
 	progressBar(i: number) {
 		/* using 20 to make the progress bar length 20 charactes, multiplying by 5 below to arrive to 100 */

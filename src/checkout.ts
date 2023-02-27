@@ -1,6 +1,6 @@
+import { BASE_URL, BASE_URL_CHECKOUT } from "./constants/url.js";
 import { ICheckoutOutput } from "./models/checkout.js";
 import { ITransferInput } from "./models/trasnfer.js";
-import { currencyToFloat } from "./utils/currency.js";
 import { dateToISOString, yesterdayDate } from "./utils/date.js";
 import { Http } from "./utils/http.js";
 
@@ -9,18 +9,21 @@ export class Checkout {
 		transfer: ITransferInput,
 		tokenType: string,
 		accessToken: string,
-		baseUrl: string,
-		baseUrlCheckout: string,
-		nokRedirect = "",
-		okRedirect = "",
+		baseUrl?: string,
+		baseUrlCheckout?: string,
+		nokRedirect?: string,
+		okRedirect?: string,
 	) {
 		this.transfer = transfer;
 		this.tokenType = tokenType;
 		this.accessToken = accessToken;
-		this.baseUrl = baseUrl;
-		this.baseUrlCheckout = baseUrlCheckout;
 		this.nokRedirect = nokRedirect;
 		this.okRedirect = okRedirect;
+
+		this.baseUrl = baseUrl ? baseUrl : BASE_URL;
+		this.baseUrlCheckout = baseUrlCheckout
+			? baseUrlCheckout
+			: BASE_URL_CHECKOUT;
 	}
 
 	transfer: ITransferInput;
@@ -29,8 +32,8 @@ export class Checkout {
 	accessToken: string;
 	baseUrl: string;
 	baseUrlCheckout: string;
-	nokRedirect: string;
-	okRedirect: string;
+	nokRedirect?: string;
+	okRedirect?: string;
 
 	async build(index: number, tenantId: string): Promise<ICheckoutOutput> {
 		try {
@@ -44,28 +47,19 @@ export class Checkout {
 				throw "Errore! Non esiste Partita Iva / Codice fiscale.";
 			}
 
-			const amount = currencyToFloat(this.transfer.amount);
-			const creditorIBAN = this.transfer.creditorIban.replace(/\s/g, "");
-			const remittance = this.transfer.remittance;
-			const vatCodeDebtor = this.transfer.debtor;
-			// const recurringInfo = this.transfer.recurringInfo
-			// 	? parseInt(this.transfer.recurringInfo)
-			// 	: 0;
-			const vatCodeCreditor = this.transfer.creditor;
-			const recurringInfo = this.transfer.recurringInfo;
 			const date = this.transfer.date
 				? dateToISOString(new Date(this.transfer.date))
 				: dateToISOString(yesterdayDate());
 
 			const transferUrl = `${this.baseUrl}/${tenantId}/transfers`;
 			const transferData = {
-				amount: amount,
-				creditor: vatCodeCreditor,
-				creditorIBAN: creditorIBAN,
-				remittance: remittance,
-				debtor: vatCodeDebtor,
+				amount: this.transfer.amount,
+				creditor: this.transfer.creditor,
+				creditorIBAN: this.transfer.creditorIban.replace(/\s/g, ""),
+				remittance: this.transfer.remittance,
+				debtor: this.transfer.debtor,
+				recurringInfo: this.transfer.recurringInfo,
 				date: date,
-				recurringInfo: recurringInfo,
 			};
 
 			const http = new Http(this.accessToken, this.tokenType);

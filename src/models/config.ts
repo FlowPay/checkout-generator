@@ -102,13 +102,13 @@ export class Config implements IConfig {
 			this.mapPath &&
 			(!existsSync(this.mapPath) || !/^.*\.(json)$/gi.test(this.mapPath))
 		)
-			throw 'Errore! Il file richiesto non esiste o non è supportato, deve essere un "json".';
+			throw `Errore! Il file "${this.mapPath}" non esiste o non è supportato, deve essere un "json".`;
 
 		if (
 			this.scriptPath &&
 			(!existsSync(this.scriptPath) ||
 				!/^.*\.(mjs)$/gi.test(this.scriptPath))
 		)
-			throw 'Errore! Il file richiesto non esiste o non è supportato, deve essere uno script in "mjs".';
+			throw `Errore! Il file "${this.scriptPath}" non esiste o non è supportato, deve essere uno script in "mjs".`;
 	}
 }

@@ -4,7 +4,11 @@ import { existsSync, readFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 
 export class CSVT<T> {
-	constructor(csvPath: string, csvPathOutput = "", nameToAdd = "generated") {
+	constructor(
+		csvPath: string,
+		csvPathOutput?: string,
+		nameToAdd = "generated",
+	) {
 		this.csvPath = csvPath;
 		this.csvPathOutput = csvPathOutput
 			? csvPathOutput
@@ -75,7 +79,6 @@ export class CSVT<T> {
 			this.sortFrom(a, b, columns),
 		);
 		const content = [keys, ...array.map((v) => keys.map((k) => v[k]))];
-
 		return `${content.map((m) => m.join(";")).join("\r\n")}`;
 	}
 }

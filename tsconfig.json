@@ -16,6 +16,6 @@
 		"moduleDetection": "force"
 	},
 
-	"include": ["src"],
+	"include": ["src", "map.json"],
 	"exclude": ["node_modules", "**/__tests__/*"]
 }
