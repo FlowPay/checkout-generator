@@ -1,12 +1,13 @@
 {
 	"name": "@flowpay/checkout-generator",
-	"version": "1.1.0",
+	"version": "1.1.2",
 	"description": "Checkout generator chackout from csv",
 	"type": "module",
 	"types": "lib/index.d.ts",
 	"main": "lib/index.js",
 	"scripts": {
 		"dev": "npm run build && node ./lib/cli.js",
+		"prod": "export NODE_ENV=production && npm run build && node ./lib/cli.js",
 		"build": "tsc",
 		"watch": "tsc -w",
 		"test": "jest --config jestconfig.json",
