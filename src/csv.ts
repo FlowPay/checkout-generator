@@ -4,9 +4,11 @@ import { existsSync, readFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 
 export class CSVT<T> {
-	constructor(csvPath: string, csvPathOutput = "") {
+	constructor(csvPath: string, csvPathOutput = "", nameToAdd = "generated") {
 		this.csvPath = csvPath;
-		this.csvPathOutput = csvPathOutput;
+		this.csvPathOutput = csvPathOutput
+			? csvPathOutput
+			: this.buildNewFileName(this.csvPath, nameToAdd);
 	}
 
 	csvPath: string;
