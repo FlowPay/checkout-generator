@@ -11,9 +11,10 @@ Requisiti necessari per usare la libreria
 -   **Client_secret** (generato sempre da [Flowpay](https://www.flowpay.it/))
 
 ## Struttura
-- [Checkout](#quick-start-checkout)
-- [CSV](#csv)
-- [Mapping](#mapping)
+
+-   [Checkout](#quick-start-checkout)
+-   [CSV](#csv)
+-   [Mapping](#mapping)
 
 ## Installazione
 
@@ -35,13 +36,13 @@ import { Checkout } from "@flowpay/checkout-generator";
 import { ITransferInput } from "@flowpay/checkout-generator/models";
 
 const transfer: ITransferInput = {
-	amount: 0.01,
-	creditorIban: "creditor_iban",
-	creditor: "creditor_iban",
-	date: new Date(),
-	debtor: "vat_code",
-	remittance: "causale",
-	recurringInfo: new RecurringInfo(numeroRicorrenze),
+	amount: 0.01, // importo
+	creditorIban: "creditor_iban", // iban del creditore
+	creditor: "creditor", // codice fiscale o partita iva del creditore
+	date: new Date(), // data di scadenza
+	debtor: "vat_code", // codice fiscale o partita iva del debitore
+	remittance: "remittance", // casuale
+	recurringInfo: new RecurringInfo(numeroRicorrenze), // se ci sono, ricorrenze del piano
 };
 
 const newCheckout = new Checkout(
