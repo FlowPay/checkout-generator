@@ -1,6 +1,6 @@
 {
 	"name": "@flowpay/checkout-generator",
-	"version": "1.1.17",
+	"version": "1.1.20",
 	"description": "Checkout generator chackout from csv",
 	"type": "module",
 	"types": "lib/index.d.ts",

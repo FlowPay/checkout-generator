@@ -1,4 +1,5 @@
 import axios from "axios";
+import { BASE_URL_OAUTH } from "../constants/url.js";
 
 export class Http {
 	constructor(accessToken?: string, tokenType?: string) {
@@ -13,11 +14,11 @@ export class Http {
 	grantType: string | undefined;
 
 	async token(
-		baseUrlOauth: string,
 		clientId: string,
 		clientSecret: string,
 		scope: string,
 		grantType: string,
+		baseUrlOauth = BASE_URL_OAUTH,
 	) {
 		const token = await this.post(
 			`${baseUrlOauth}/token`,

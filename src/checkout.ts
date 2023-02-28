@@ -10,21 +10,17 @@ export class Checkout {
 		transfer: ITransferInput,
 		tokenType: string,
 		accessToken: string,
-		baseUrl?: string,
-		baseUrlCheckout?: string,
-		nokRedirect?: string,
-		okRedirect?: string,
+		tenantId: string,
+		baseUrl = BASE_URL,
+		baseUrlCheckout = BASE_URL_CHECKOUT,
 	) {
 		this.transfer = transfer;
 		this.tokenType = tokenType;
 		this.accessToken = accessToken;
-		this.nokRedirect = nokRedirect;
-		this.okRedirect = okRedirect;
+		this.tenantId = tenantId;
 
-		this.baseUrl = baseUrl ? baseUrl : BASE_URL;
-		this.baseUrlCheckout = baseUrlCheckout
-			? baseUrlCheckout
-			: BASE_URL_CHECKOUT;
+		this.baseUrl = baseUrl;
+		this.baseUrlCheckout = baseUrlCheckout;
 	}
 
 	transfer: ITransferInput;
@@ -33,10 +29,12 @@ export class Checkout {
 	accessToken: string;
 	baseUrl: string;
 	baseUrlCheckout: string;
-	nokRedirect?: string;
-	okRedirect?: string;
+	tenantId: string;
 
-	async build(index: number, tenantId: string): Promise<ICheckoutOutput> {
+	nokRedirect: string | undefined;
+	okRedirect: string | undefined;
+
+	async build(): Promise<ICheckoutOutput> {
 		try {
 			// todo: aggiungere un assert valori
 
@@ -58,7 +56,7 @@ export class Checkout {
 				? dateToISOString(new Date(this.transfer.date))
 				: dateToISOString(yesterdayDate());
 
-			const transferUrl = `${this.baseUrl}/${tenantId}/transfers`;
+			const transferUrl = `${this.baseUrl}/${this.tenantId}/transfers`;
 			const transferData = {
 				amount: amount,
 				creditor: vatCodeCreditor,
@@ -81,7 +79,7 @@ export class Checkout {
 				throw `Errore! Non ho ottenuto il fingerprint`;
 			}
 
-			const checkoutUrl = `${this.baseUrl}/${tenantId}/checkout`;
+			const checkoutUrl = `${this.baseUrl}/${this.tenantId}/checkout`;
 			const checkoutData = {
 				fingerprint: fingerprint,
 				nokRedirect: this.nokRedirect,
@@ -107,7 +105,7 @@ export class Checkout {
 
 			return result;
 		} catch (err) {
-			throw `\nGenerazione ${index}: ${err}`; // console.error(chalk.red(`\nGenerazione ${index}: ${err}`)); // per non thoware
+			throw `${err}`; // console.error(chalk.red(`\nGenerazione ${index}: ${err}`)); // per non thoware
 		}
 	}
 }
