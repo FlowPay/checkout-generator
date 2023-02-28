@@ -6,5 +6,6 @@
 	"remittance": "Causale",
 	"code_invoice": "Riferimento checkout",
 	"url_checkout": "Link riferimento checkout",
-	"recurring_info": "Ricorrenze"
+	"recurring_info": "Ricorrenze",
+	"fingerprint": "Riferimento documento FlowPay"
 }

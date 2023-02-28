@@ -1,84 +1,159 @@
-# Checkout Generator 🧬
+# Checkout Generator SDK
 
-**Checkout Generator** è uno script in node.js che può generare una lista di checkout da un CSV, integrato perfettamente con le api di [Flowpay](https://www.flowpay.it/).
+**Checkout Generator SDK** è una libreria per generare checkout con [Flowpay](https://www.flowpay.it/).
 
 ## Requisiti
 
-Requisiti necessari per eseguire lo script node
+Requisiti necessari per usare la libreria
 
--   [Node](https://nodejs.org/)
+-   [npm](https://nodejs.org/)
 -   **Client_id** (generato [Flowpay](https://www.flowpay.it/))
 -   **Client_secret** (generato sempre da [Flowpay](https://www.flowpay.it/))
--   File CSV da [esempio](./example/esempio.csv)
+
+## Struttura
+- [Checkout](#quick-start-checkout)
+- [CSV](#csv)
+- [Mapping](#mapping)
 
 ## Installazione
 
-Usa il package manager [npm](https://www.npmjs.com/) per installare **Checkout Generator**.
+Usa il package manager [npm](https://www.npmjs.com/) per installare **Checkout Generator SDK**.
 
 ```sh
-# clona la repository oppure scarica la zip
-git clone https://github.com/FlowPay/checkout-generator.git
-
-# apri la cartella della repo appena scaricata
-cd checkout-generator
-
-# installa il pacchetto globale
-npm install -g
+# installa il pacchetto nel tuo progetto
+npm install --save @flowpay/checkout-generator
 ```
 
 Se ancora non hai il client di e il client secret, puoi generarli dalla piattaforma di sviluppo dedicata [Flowpay](https://app.flowpay.it/).
 
-Puoi impostare le due chiavi come variabile ambiente oppure come parametro script. Per variabile ambiente segui queste istruzioni.
+## Quick start Checkout
 
-```sh
+Per generare dei checkout è sufficiente istanziare la classe `Checkout` con i dati richiesti.
 
-# [facoltativo] imposta le variabili di ambiente clientId e clientSecret
+```ts
+import { Checkout } from "@flowpay/checkout-generator";
+import { ITransferInput } from "@flowpay/checkout-generator/models";
 
-# inserisci il tuo client id al posto di <your_client_id>
-export CLIENT_ID=<your_client_id>
+const transfer: ITransferInput = {
+	amount: 0.01,
+	creditorIban: "creditor_iban",
+	creditor: "creditor_iban",
+	date: new Date(),
+	debtor: "vat_code",
+	remittance: "causale",
+	recurringInfo: new RecurringInfo(numeroRicorrenze),
+};
 
-# inserisci il tuo client secret al posto di <your_client_secret>
-export CLIENT_SECRET=<your_client_secret>
+const newCheckout = new Checkout(
+	transfer,
+	"toke_type",
+	"access_token",
+	"tenant_id",
+);
+
+const checkoutGenerated = await newCheckout.build();
+
+/* Dunque checkoutGenerated avrà 
+
+export interface ICheckoutOutput {
+	codeInvoice: string; // codice fattura
+	url: string; // url del checkout
+	fingerprint: string; // chiave di riferimento checkout
+}
+
+*/
 ```
 
-Per windows invece segui queste [istruzioni](https://phoenixnap.com/kb/windows-set-environment-variable).
+> Se non possiedi i dati richiesti segui questi passaggi [Token](#token-type-e-access-token) e [Tenant](#tenant-id).
 
-## Utilizzo
+### Token Type e Access Token
 
-È importante sapere che oltre alle chiavi utili per accedere alle api di **flowpay** è necessario impostare un input path del csv da cui generare il ceckout. Oltre al parametro di input è possibile impostare il path output per scegliere il nome e la directory del csv generato, se si desidera generare nella stessa cartella non importare alcun parametro di output. Vedi gli esempi qui.
+Per ottenere le chiavi di accesso puoi seguire dalla [documentazione](https://docs.flowpay.it/#section/Autenticazione/Autenticazione-con-client-credentials) api Flowpay oppure segui queste indicazioni.
 
-```sh
-# esegui questa istruzione con chiavi impostate nella variabile di ambiente
-fpy-generator --p "<your_path_csv>"
+```ts
+import { Http } from "@flowpay/checkout-generator/utils";
 
-# esegui quest istruzione per impostare oltre all'input un output path per la generazione del csv finale
-fpy-generator --p "<your_path_csv>" --o "<your_path_output_csv>"
+const http = new Http();
+const scope = "transfer:read transfer:write business:read";
+const token = await http.token(
+	"CLIENT_ID",
+	"CLIENT_SECRET",
+	scope,
+	"client_credentials",
+);
 
-# esegui script impostando le chiavi come parametro se non sono come variabile ambiente
-fpy-generator --p "<your_path_csv>" --i "<your_client_id>" --s "<your_client_secret>"
+/* token avrà 
+ {
+        "access_token": "<access_token>",
+        "token_type": "bearer",
+        "expires_in": 3600,
+        "scope": "<scope>"
+    }
+*/
 ```
 
-## Opzioni
+La funzione `token(...)` inoltre imposta le chiavi necessarie per l'autenticazione per le richieste `post` e `get` future.
 
-Lo script è in grado di accettare alre opzioni per esempio il link di redirect di un checkout. Qui tutte le opzioni che accetta lo script.
+### Tenant Id
 
-| Parametri | Alias          | Descrizione                                                                                            | Tipo   |
-| --------- | -------------- | ------------------------------------------------------------------------------------------------------ | ------ |
-| -p        | --path         | Inserisci il csv path del file da cui generare i checkout                                              | string |
-| -o        | --pathOutput   | Inserisci un path per output del csv generato. Se omesso sarà nella stessa cartella del file caricato. | string |
-| -j        | --pathMap      | Inserisci il path del map.json per mappare i titoli di colonna custom (property field custom).         | string |
-| -r        | --okRedirect   | Configura un link per il redirect per checkout.                                                        | string |
-| -n        | --nokRedirect  | Configura un link per il redirect nel caso non esegua con successo il checkout.                        | string |
-| -i        | --clientId     | Configura il tuo client_id.                                                                            | string |
-| -s        | --clientSecret | Configura il tuo client_secret.                                                                        | string |
+Per ottenere il tenant id è sufficiente chiamare l'api introspetion (vedi [documentazione](https://docs.flowpay.it/#section/TenantID) api Flowpay) oppure scrivi questo codice sostituendo i dati utili.
+
+```ts
+import { Http } from "@flowpay/checkout-generator/utils";
+
+const url = "https://core.flowpay.it/api/openid/token/introspection";
+const headers = { "content-type": "application/x-www-form-urlencoded" };
+const data = { token: "access_token" };
+const intro = await http.post(url, headers, data, false);
+
+const tenantId = intro.data.tenant_id
+	? intro.data.tenant_id
+	: intro.data.business_id;
+
+/*
+	tenant id sarà una chiave di riferimento del tuo business
+*/
+```
+
+## CSV
+
+Se desideri generare dei checkout da csv, puoi usufruire della libreria `CSV`come da questo codice.
+
+```ts
+import { CSV } from "@flowpay/checkout-generator";
+
+// carica e leggi il contenuto del tuo csv in base alla
+// client di utilizzo, se node.js readFile()
+// se da DOM new FileReader()
+
+const csv = new CSV(rawData /* contenuto string del csv */);
+const { columnNames, datas } = csv.extract();
+
+// oppure se ti aspetti di ricevere
+// un oggetto puoi usare CSVT
+const csv = new CSVT<T>(rawData /* contenuto string del csv */);
+const { columnNames, datas } = csv.extract();
+
+/*
+	il risultato di extract è un oggetto 
+	{
+		columnNames, // array con i titoli delle colonne
+		rowDatas, // array di array di dati riga per colonna 
+		datas, // array di oggetto ricostruito
+	}
+*/
+
+// per ricostruire il csv puoi scrivere questo codice
+const newContentCsv = csv.buildContentCsv(datas, columnNames);
+
+/*
+	newContentCsv sarà una string da poter scrivere in un file csv
+*/
+```
 
 ## Mapping
 
-È possibile mappare le colonne del proprio csv con due modalità diverse di configurazione:
-
--   File .json
--   Opzioni di configurazione da terminale
-
+È possibile mappare le colonne del proprio csv utilizzando una struttura JSON.
 Di default la configurazione è questa ed è presente nel file [map.json](map.json)
 
 ```json
@@ -94,24 +169,29 @@ Di default la configurazione è questa ed è presente nel file [map.json](map.js
 }
 ```
 
-Per aggiungere una propria configurazione sarà dunque sufficiente creare un file .json, che abbia uno schema come qui sopra, con i nomi delle proprie colonne relative. Per esempio modifico "Partita Iva" con "Codice Fiscale". In fine, impostare come parametro il path del mio nuovo mapping.
-
-```sh
-# esegui questa istruzione con chiavi impostate nella variabile di ambiente
-fpy-generator --p "<your_path_csv>" ...altri comandi --j "<your_path_map>"
-```
-
 > NB. Il valore che modificherai dovrà essere equivalente con il nome della colonna da mappare.
 
-Oppure se si desidera mappare una sola colonna o tutte attravero opzioni di script, segui questa tabella.
+Per utilizzare questa funzione della libreria segui questo codice.
 
-| Parametri | Alias           | Descrizione                                                              | Tipo   |
-| --------- | --------------- | ------------------------------------------------------------------------ | ------ |
-| -v        | --vatCode       | Mappa nome della colonna di vat_code (Partita IVA).                      | string |
-| -c        | --creditorIban  | Mappa nome della colonna di creditor_iban (Creditore IBAN).              | string |
-| -a        | --amount        | Mappa nome della colonna di amount (Importo).                            | string |
-| -e        | --expireDate    | Mappa nome della colonna di expire_date (Data di scadenza).              | string |
-| -r        | --remittance    | Mappa nome della colonna di remittance (Causale).                        | string |
-| -d        | --codeInvoice   | Mappa nome della colonna di code_invoice (Codice checkout **generato**). | string |
-| -u        | --urlCheckout   | Mappa nome della colonna di url_checkout (Url checkout **generato**).    | string |
-| -ri       | --recurringInfo | Mappa nome della colonna di recurring_info (Ricorrenza).                 | string |
+```ts
+import { Mapping } from "@flowpay/checkout-generator/utils";
+
+const mapField = { "...": "..." }; // struttura json da mappare con nel esempio qui sopra di map.json
+const mapping = new Mapping(mapField);
+
+// mappa la key con value
+const records = mapping.to(
+	datas /* oggetto estratto dal csv con la libreria CSV */,
+);
+
+// viceversa
+const records = mapping.from(
+	datas /* oggetto estratto dal csv con la libreria CSV */,
+);
+
+// nel caso uso di due map da unire in una
+const newMapField = mapping.merge(
+	{ "...": "..." },
+	{ "...": "..." }, // struttura json da mappare con nel esempio qui sopra di map.json,
+);
+```
