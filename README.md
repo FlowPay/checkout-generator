@@ -1,30 +1,31 @@
-# Checkout Generator SDK
+# Checkout Generator
 
-**Checkout Generator SDK** è una libreria per generare checkout con [Flowpay](https://www.flowpay.it/).
+**Checkout Generator** è una libreria per generare checkout con [FlowPay](https://developer.flowpay.it/).
 
 ## Requisiti
 
 Requisiti necessari per usare la libreria
 
 -   [npm](https://nodejs.org/)
--   **Client_id** (generato [Flowpay](https://www.flowpay.it/))
--   **Client_secret** (generato sempre da [Flowpay](https://www.flowpay.it/))
+-   **Client_id** (generato [FlowPay](https://developer.flowpay.it/))
+-   **Client_secret** (generato sempre da [FlowPay](https://developer.flowpay.it/))
 
 ## Struttura
-- [Checkout](#quick-start-checkout)
-- [CSV](#csv)
-- [Mapping](#mapping)
+
+-   [Checkout](#quick-start-checkout)
+-   [CSV](#csv)
+-   [Mapping](#mapping)
 
 ## Installazione
 
-Usa il package manager [npm](https://www.npmjs.com/) per installare **Checkout Generator SDK**.
+Usa il package manager [npm](https://www.npmjs.com/) per installare **Checkout Generator**.
 
 ```sh
 # installa il pacchetto nel tuo progetto
 npm install --save @flowpay/checkout-generator
 ```
 
-Se ancora non hai il client di e il client secret, puoi generarli dalla piattaforma di sviluppo dedicata [Flowpay](https://app.flowpay.it/).
+Se ancora non hai il client di e il client secret, puoi generarli dalla piattaforma di sviluppo dedicata [FlowPay](https://developer.flowpay.it/).
 
 ## Quick start Checkout
 
@@ -35,13 +36,13 @@ import { Checkout } from "@flowpay/checkout-generator";
 import { ITransferInput } from "@flowpay/checkout-generator/models";
 
 const transfer: ITransferInput = {
-	amount: 0.01,
-	creditorIban: "creditor_iban",
-	creditor: "creditor_iban",
-	date: new Date(),
-	debtor: "vat_code",
-	remittance: "causale",
-	recurringInfo: new RecurringInfo(numeroRicorrenze),
+	amount: 0.01, // importo
+	creditorIban: "creditor_iban", // iban del creditore
+	creditor: "creditor", // codice fiscale o partita iva del creditore
+	date: new Date(), // data di scadenza
+	debtor: "vat_code", // codice fiscale o partita iva del debitore
+	remittance: "remittance", // casuale
+	recurringInfo: new RecurringInfo(numeroRicorrenze), // se ci sono, ricorrenze del piano
 };
 
 const newCheckout = new Checkout(
@@ -53,14 +54,13 @@ const newCheckout = new Checkout(
 
 const checkoutGenerated = await newCheckout.build();
 
-/* Dunque checkoutGenerated avrà 
-
-export interface ICheckoutOutput {
-	codeInvoice: string; // codice fattura
-	url: string; // url del checkout
-	fingerprint: string; // chiave di riferimento checkout
-}
-
+/* 
+	Dunque checkoutGenerated avrà 
+	export interface ICheckoutOutput {
+		codeInvoice: string; // codice fattura
+		url: string; // url del checkout
+		fingerprint: string; // chiave di riferimento checkout
+	}
 */
 ```
 
@@ -68,7 +68,7 @@ export interface ICheckoutOutput {
 
 ### Token Type e Access Token
 
-Per ottenere le chiavi di accesso puoi seguire dalla [documentazione](https://docs.flowpay.it/#section/Autenticazione/Autenticazione-con-client-credentials) api Flowpay oppure segui queste indicazioni.
+Per ottenere le chiavi di accesso puoi seguire dalla [documentazione](https://docs.flowpay.it/#section/Autenticazione/Autenticazione-con-client-credentials) api FlowPay oppure segui queste indicazioni.
 
 ```ts
 import { Http } from "@flowpay/checkout-generator/utils";
@@ -82,13 +82,14 @@ const token = await http.token(
 	"client_credentials",
 );
 
-/* token avrà 
- {
-        "access_token": "<access_token>",
-        "token_type": "bearer",
-        "expires_in": 3600,
-        "scope": "<scope>"
-    }
+/* 
+	token avrà 
+	{
+		"access_token": "<access_token>",
+		"token_type": "bearer",
+		"expires_in": 3600,
+		"scope": "<scope>"
+	}
 */
 ```
 
@@ -96,7 +97,7 @@ La funzione `token(...)` inoltre imposta le chiavi necessarie per l'autenticazio
 
 ### Tenant Id
 
-Per ottenere il tenant id è sufficiente chiamare l'api introspetion (vedi [documentazione](https://docs.flowpay.it/#section/TenantID) api Flowpay) oppure scrivi questo codice sostituendo i dati utili.
+Per ottenere il tenant id è sufficiente chiamare l'api introspetion (vedi [documentazione](https://docs.flowpay.it/#section/TenantID) api FlowPay) oppure scrivi questo codice sostituendo i dati utili.
 
 ```ts
 import { Http } from "@flowpay/checkout-generator/utils";
@@ -117,7 +118,7 @@ const tenantId = intro.data.tenant_id
 
 ## CSV
 
-Se desideri generare dei checkout da csv, puoi usufruire della libreria `CSV`come da questo codice.
+Se desideri generare dei checkout da csv, puoi usufruire della libreria `CSV` come da questo codice.
 
 ```ts
 import { CSV } from "@flowpay/checkout-generator";
