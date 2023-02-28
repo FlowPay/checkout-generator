@@ -1,5 +1,7 @@
 import { Checkout } from "./checkout.js";
-import { CSV } from "./csv.js";
-import { Mapping } from "./utils/mapping.js";
+import { CSV, CSVT } from "./csv.js";
 
-export { Checkout, CSV, Mapping };
+// export * as models from "./models/index.js";
+// export * as utils from "./utils/index.js";
+
+export { Checkout, CSV, CSVT };

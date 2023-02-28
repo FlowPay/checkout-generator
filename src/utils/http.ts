@@ -1,5 +1,4 @@
-//@ts-ignore
-import axios from "../../node_modules/axios/lib/axios.js";
+import axios from "axios";
 
 export class Http {
 	constructor(accessToken?: string, tokenType?: string) {

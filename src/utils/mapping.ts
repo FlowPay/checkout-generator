@@ -1,13 +1,10 @@
-import { readFileSync } from "fs";
 import { IMapping } from "../models/mapping.js";
 
 export class Mapping {
-	constructor(path: string, mapField: IMapping) {
-		this.path = path;
+	constructor(mapField: IMapping) {
 		this.mapField = mapField;
 	}
 
-	path: string;
 	mapField: IMapping;
 
 	merge(fromJson: IMapping, fromOption: IMapping): IMapping {
@@ -44,10 +41,10 @@ export class Mapping {
 		});
 	}
 
-	build() {
-		const rawdata = readFileSync(this.path, { encoding: "utf-8" });
-		const mapField = JSON.parse(rawdata);
-		const mapMerged = this.merge(mapField, this.mapField);
+	build(otherMapField?: IMapping) {
+		if (!otherMapField) return;
+
+		const mapMerged = this.merge(this.mapField, otherMapField);
 
 		// imposta la nuova mapFiled mergiata
 		this.mapField = mapMerged;
