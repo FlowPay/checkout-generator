@@ -9,3 +9,5 @@ test.js
 .*/
 node_modules/
 lib/
+.npmrc
+package-lock.json
